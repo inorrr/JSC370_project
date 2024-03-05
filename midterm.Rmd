@@ -1,0 +1,9 @@
+---
+title: "Midterm Project"
+author: "Yinuo Zhao"
+date: "Mar 2, 2024"
+output:
+  html_document:
+    html_preview: false
+link-citations: yes
+---
