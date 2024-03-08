@@ -356,7 +356,176 @@ display: none;
 </div>
 
 
+<pre class="r"><code>#install.packages(c(&quot;data.table&quot;,&quot;leaflet&quot;))
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
+library(data.table)
+library(tidyverse)
+library(kableExtra)
+library(dplyr)
+library(splines)
+library(mgcv)</code></pre>
+<div id="introduction" class="section level2">
+<h2>Introduction</h2>
+<p><em>“Provide background on your data sets and a clear formulated
+question or hypothesis.”</em></p>
+<p>For this project, my question of Interest is: <strong>“How does crime
+rate relate to poverty in Canada?”</strong></p>
+<p>In order to answer this question, data on both crime and
+socioeconomic status are needed. However, I found no existing data set
+that contains all desired information, therefore this needs to be
+achieved through merging more than one data sets. Aftering choosing
+carefully, the following two separate data sets are obtained:</p>
+<ol style="list-style-type: decimal">
+<li><p>“Income of individuals by age group, sex and income source,
+Canada, provinces and selected census metropolitan areas”</p></li>
+<li><p>“Incident-based crime statistics, by detailed violations, Canada,
+provinces, territories, Census Metropolitan Areas and Canadian Forces
+Military Police”</p></li>
+</ol>
+</div>
+<div id="methods" class="section level2">
+<h2>Methods</h2>
+<p><em>“Include how and where the data were acquired, how you cleaned
+and wrangled the data, what tools you used for data
+exploration.”</em></p>
+<p>Both are downloaded directly from <strong>Statistics Canada</strong>,
+which is considered to be an reliable source. Since they are from the
+same source, the data sets follows similar structure and all contains
+the two columns “GEO” and “REF_DATE” where the former one refers to the
+geographical region and the second one refers to the year of data. Thus,
+it’s possible to combine the two data sets to obtain all information
+needed.</p>
+<p>However, it is worth mentioning that both data sets are huge and
+contains <strong>unrelated information</strong>. Therefore, cleaning and
+wrangling are needed for more convenient analysis and more efficient
+computing &amp; uploading, as the original data sets are oversize thus
+cannot be pushed to github repository.</p>
+<pre class="r"><code>fn1 &lt;- &quot;https://raw.githubusercontent.com/inorrr/JSC370_project/main/census.csv&quot;
+fn2 &lt;- &quot;https://raw.githubusercontent.com/inorrr/JSC370_project/main/crime.csv&quot;
 
+if (!file.exists(&quot;census_original.csv&quot;))
+  download.file(fn1, destfile = &quot;census_original.csv&quot;)
+census_df &lt;- data.table::fread(&quot;census_original.csv&quot;)
+
+if (!file.exists(&quot;crime_original.csv&quot;))
+  download.file(fn2, destfile = &quot;crime_original.csv&quot;)
+crime_df &lt;- data.table::fread(&quot;crime_original.csv&quot;)</code></pre>
+<ol style="list-style-type: decimal">
+<li>First I dropped the unrelated columns in both columns, keeping only
+information revelant to the question of interest.</li>
+</ol>
+<pre class="r"><code>crime_df &lt;- crime_df[, c(&quot;REF_DATE&quot;, &quot;GEO&quot;, &quot;Violations&quot;, &quot;Statistics&quot;, &quot;VALUE&quot;, &quot;UOM&quot;)]
+census_df &lt;- census_df[, c(&quot;REF_DATE&quot;, &quot;GEO&quot;, &quot;Age group&quot;, &quot;Sex&quot;, &quot;Income source&quot;, &quot;Statistics&quot;, &quot;VALUE&quot;, &quot;UOM&quot;, &quot;SCALAR_FACTOR&quot;)]</code></pre>
+<ol start="2" style="list-style-type: decimal">
+<li>I noticed that in the GEO column:</li>
+</ol>
+<ul>
+<li>both data sets uses a mix of province &amp; city names. I removed
+all observations with city names and keep only those province data so
+that the data set is smaller(since the province data contains cities
+already) and avoids redundancy.</li>
+<li>Notice that the census data only have data from the 10 provinces,
+not the 3 territories, I filtered out those data from the crime data set
+as there are no matching data.</li>
+<li>Notice that there is a square bracket with a number behind each
+province name in the crime data, therefore I removed it with regular
+expression so that we can join the two data sets on province later.</li>
+</ul>
+<pre class="r"><code>table(census_df$GEO)
+
+provinces1 &lt;- c(&quot;Alberta [48]&quot;, &quot;British Columbia [59]&quot;, &quot;Manitoba [46]&quot;, &quot;New Brunswick [13]&quot;, 
+               &quot;Newfoundland and Labrador [10]&quot;, &quot;Saskatchewan [47]&quot;,
+               &quot;Nova Scotia [12]&quot;, &quot;Ontario [35]&quot;, 
+               &quot;Prince Edward Island [11]&quot;, &quot;Quebec [24]&quot;)
+
+provinces2 &lt;- c(&quot;Alberta&quot;, &quot;British Columbia&quot;, &quot;Manitoba&quot;, &quot;New Brunswick&quot;, 
+               &quot;Newfoundland and Labrador&quot;, &quot;Saskatchewan&quot;,&quot;Nova Scotia&quot;, 
+               &quot;Ontario&quot;, &quot;Prince Edward Island&quot;, &quot;Quebec&quot;)
+
+crime_df &lt;- crime_df[crime_df$GEO %in% provinces1, ]
+census_df &lt;- census_df[census_df$GEO %in% provinces2, ]
+
+crime_df$GEO &lt;- gsub(&quot;\\s*\\[\\d+\\]$&quot;, &quot;&quot;, crime_df$GEO)
+table(crime_df$GEO)</code></pre>
+<ol start="2" style="list-style-type: decimal">
+<li>In the Statistics column of the crime data, there are many measures
+related to crime, but I’m only interested in the number of incidents
+(<code>Actual incidents</code>) and crime rate
+(<code>Rate per 100,000 population</code>), thus statistics related to
+charges are removed. The Crime Severity
+Index(<code>Percentage contribution to the Crime Severity Index (CSI)</code>)
+seems to be interesting and thus is kept.</li>
+</ol>
+<pre class="r"><code>crime_df &lt;- crime_df %&gt;% filter(Statistics == &quot;Actual incidents&quot; | 
+                                Statistics == &quot;Rate per 100,000 population&quot; | 
+                                Statistics == &quot;Percentage contribution to the Crime Severity Index (CSI)&quot;)</code></pre>
+<ol start="3" style="list-style-type: decimal">
+<li>In the crime data frame,</li>
+</ol>
+<ul>
+<li>there are 314 different types of crime, which does much more
+detailed categorization than I’m interested in. Therefore, to avoid
+having too much computation to merge data later on, I choose too keep
+only the bigger categories (i.e. total robbery, total assaults,
+etc).</li>
+<li>There are also square brackets at the end so I removed them.</li>
+</ul>
+<pre class="r"><code>print(length(unique(crime_df$Violations)))
+table(crime_df$Violations)
+
+# Identify rows that start with &quot;Total&quot;
+total_rows &lt;- grepl(&quot;^Total&quot;, crime_df$Violations)
+
+# Subset the dataframe to keep only the rows starting with &quot;Total&quot;
+crime_df &lt;- crime_df[total_rows, , drop = FALSE]
+
+# Remove square brackets and numbers at the end
+crime_df$Violations &lt;- gsub(&quot;\\s*\\[\\d+\\]$&quot;, &quot;&quot;, crime_df$Violations)</code></pre>
+<ol start="3" style="list-style-type: decimal">
+<li>In the census data frame:</li>
+</ol>
+<ul>
+<li><p>the column Age group specifies the age however since we do not
+have this information in the crime df, we need to combine all age
+groups. This can be done by taking the average of the
+categories.</p></li>
+<li><p>Same for sex, same method is used.</p></li>
+</ul>
+<pre class="r"><code>table(census_df$&quot;Age group&quot;)
+table(census_df$&quot;Sex&quot;)
+
+# first we merge the age group categories
+census_df &lt;- census_df %&gt;% 
+  group_by(REF_DATE, GEO, Sex, `Income source`, Statistics, UOM, SCALAR_FACTOR) %&gt;% 
+  summarise(VALUE = mean(VALUE, na.rm = TRUE))
+
+# next we merge the age group categories
+census_df &lt;- census_df_new %&gt;% 
+  group_by(REF_DATE, GEO, `Income source`, Statistics, UOM, SCALAR_FACTOR) %&gt;% 
+  summarise(VALUE = mean(VALUE, na.rm = TRUE))</code></pre>
+<ol start="4" style="list-style-type: decimal">
+<li>I keep only the data between 1998 and 2021, as that’s the year range
+where the two data sets overlap.</li>
+</ol>
+<pre class="r"><code>crime_df &lt;- crime_df %&gt;% filter(REF_DATE &gt;= 1998 &amp; REF_DATE &lt;= 2021)
+census_df &lt;- census_df %&gt;% filter(REF_DATE &gt;= 1998 &amp; REF_DATE &lt;= 2021)</code></pre>
+<ol start="5" style="list-style-type: decimal">
+<li>Write the cleaned data frame to CSV files.</li>
+</ol>
+<pre class="r"><code>write.csv(crime_df, &quot;/Users/yinuozhao/Desktop/UofT/JSC370/JSC370-2024-main/JSC370_project/crime.csv&quot;)
+write.csv(census_df, &quot;/Users/yinuozhao/Desktop/UofT/JSC370/JSC370-2024-main/JSC370_project/census.csv&quot;)</code></pre>
+</div>
+<div id="preliminary-results" class="section level2">
+<h2>Preliminary Results</h2>
+<p>Provide summary statistics in tabular from and publication-quality
+figures, take a look at the kable function from knitr to write nice
+tables in Rmarkdown</p>
+</div>
+<div id="summary" class="section level2">
+<h2>Summary</h2>
+<p>What you found so far from your data in terms of the formulated
+question.</p>
+</div>
 
 
 

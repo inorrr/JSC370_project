@@ -23,27 +23,28 @@ library(mgcv)
 
 ## Introduction
 
-Provide background on your data sets and a clear formulated question or hypothesis.
+*"Provide background on your data sets and a clear formulated question or hypothesis."*
 
-Question of Interest: "How does crime rate relate to poverty in Canada?"
+For this project, my question of Interest is: **"How does crime rate relate to poverty in Canada?"**
 
-In order to answer this question, data on both crime and socioeconomic status are needed. Since there are no existing data set that contains all desired information, two seperte data sets are obtained: 
+In order to answer this question, data on both crime and socioeconomic status are needed. However, I found no existing data set that contains all desired information, therefore this needs to be achieved through merging more than one data sets. Aftering choosing carefully, the following two separate data sets are obtained: 
 
   1. "Income of individuals by age group, sex and income source, Canada, provinces and selected census metropolitan areas"
   
   2. "Incident-based crime statistics, by detailed violations, Canada, provinces, territories, Census Metropolitan Areas and Canadian Forces Military Police"
+
+
+## Methods
+
+*"Include how and where the data were acquired, how you cleaned and wrangled the data, what tools you used for data exploration."*
   
-Both are from Statistics Canada and thus are reliable. Since they are from the same source, the data sets follows similar structure and all contains the two columns "GEO" and "REF_DATE" where the former one refers to the geographical region and the second one refers to the year of data. Thus, it's possible to combine the two data sets to obtain all information needed.
+Both are downloaded directly from **Statistics Canada**, which is considered to be an reliable source. Since they are from the same source, the data sets follows similar structure and all contains the two columns "GEO" and "REF_DATE" where the former one refers to the geographical region and the second one refers to the year of data. Thus, it's possible to combine the two data sets to obtain all information needed.
 
-However, it is worth mentioning that both data sets are huge and contains unrelated information. Therefore, cleaning and wrangling are needed for more convienent analysis and more efficient computing & uploading, as the origional data sets are oversized thus cannot be pushed to github repository.
+However, it is worth mentioning that both data sets are huge and contains **unrelated information**. Therefore, cleaning and wrangling are needed for more convenient analysis and more efficient computing & uploading, as the original data sets are oversize thus cannot be pushed to github repository.
 
-
-
-
-0. Load the datasets
 ```{r checking-file}
-fn1 <- "https://www.kaggle.com/datasets/mikekzan/who-alcohol-total-per-capita-consumption-rate?resource=download&select=WHOAlcoholTotalPerCapita_2021-09-20v2.csv"
-fn2 <- "https://data.novascotia.ca/api/views/daey-6b54/rows.csv?accessType=DOWNLOAD"
+fn1 <- "https://raw.githubusercontent.com/inorrr/JSC370_project/main/census.csv"
+fn2 <- "https://raw.githubusercontent.com/inorrr/JSC370_project/main/crime.csv"
 
 if (!file.exists("census_original.csv"))
   download.file(fn1, destfile = "census_original.csv")
@@ -53,87 +54,53 @@ if (!file.exists("crime_original.csv"))
   download.file(fn2, destfile = "crime_original.csv")
 crime_df <- data.table::fread("crime_original.csv")
 ```
-First I dropped the unrelated columns in both columns, keeping only information revelant to the question of interest.
 
-```{r include = FALSE}
+1. First I dropped the unrelated columns in both columns, keeping only information revelant to the question of interest.
+
+```{r eval = FALSE}
 crime_df <- crime_df[, c("REF_DATE", "GEO", "Violations", "Statistics", "VALUE", "UOM")]
 census_df <- census_df[, c("REF_DATE", "GEO", "Age group", "Sex", "Income source", "Statistics", "VALUE", "UOM", "SCALAR_FACTOR")]
 ```
 
-I noticed that in the GEO column, both data sets uses a mix of province & city names. I removed all observations with city names and keep only those province data so that the dataset is smaller(since the province data contains cities already) and avoids redundancy.
+2. I noticed that in the GEO column:
+  + both data sets uses a mix of province & city names. I removed all observations with city names and keep only those province data so that the data set is smaller(since the province data contains cities already) and avoids redundancy. 
+  + Notice that the census data only have data from the 10 provinces, not the 3 territories, I filtered out those data from the crime data set as there are no matching data. 
+  + Notice that there is a square bracket with a number behind each province name in the crime data, therefore I removed it with regular expression so that we can join the two data sets on province later.
 
-```{r include = FALSE}
-# table(crime_df$GEO)
+```{r eval = FALSE}
+
 table(census_df$GEO)
 
-provinces1 <- c("Alberta [48]", 
-               "British Columbia [59]", 
-               "Manitoba [46]", 
-               "New Brunswick [13]", 
-               "Newfoundland and Labrador [10]", 
-               "Yukon [60]", 
-               "Saskatchewan [47]",
-               "Nova Scotia [12]", 
-               "Nunavut [62]", 
-               "Ontario [35]", 
-               "Northwest Territories [61]",
-               "Prince Edward Island [11]",
-               "Quebec [24]")
+provinces1 <- c("Alberta [48]", "British Columbia [59]", "Manitoba [46]", "New Brunswick [13]", 
+               "Newfoundland and Labrador [10]", "Saskatchewan [47]",
+               "Nova Scotia [12]", "Ontario [35]", 
+               "Prince Edward Island [11]", "Quebec [24]")
 
-provinces2 <- c("Alberta", 
-               "British Columbia", 
-               "Manitoba", 
-               "New Brunswick", 
-               "Newfoundland and Labrador", 
-               "Yukon", 
-               "Saskatchewan",
-               "Nova Scotia", 
-               "Nunavut", 
-               "Ontario", 
-               "Northwest Territories",
-               "Prince Edward Island",
-               "Quebec")
+provinces2 <- c("Alberta", "British Columbia", "Manitoba", "New Brunswick", 
+               "Newfoundland and Labrador", "Saskatchewan","Nova Scotia", 
+               "Ontario", "Prince Edward Island", "Quebec")
+
 crime_df <- crime_df[crime_df$GEO %in% provinces1, ]
 census_df <- census_df[census_df$GEO %in% provinces2, ]
-```
-Notice that the census data only have data from the 10 provinces, not the 3 territories, I filtered out those data from the crime dataset as there are no matching data. 
 
-```{r include = FALSE}
-table(census_df$GEO)
-provinces3 <- c("Alberta [48]", 
-               "British Columbia [59]", 
-               "Manitoba [46]", 
-               "New Brunswick [13]", 
-               "Newfoundland and Labrador [10]", 
-               "Saskatchewan [47]",
-               "Nova Scotia [12]", 
-               "Ontario [35]", 
-               "Prince Edward Island [11]",
-               "Quebec [24]")
-
-crime_df <- crime_df[crime_df$GEO %in% provinces3, ]
-head(crime_df)
-```
-
-Notice that there is a square bracket with a number behind each province name in the crime data, therefore I removed it with regular expression so that we can join the two data sets on province later.
-```{r include = FALSE}
 crime_df$GEO <- gsub("\\s*\\[\\d+\\]$", "", crime_df$GEO)
 table(crime_df$GEO)
 ```
 
+2. In the Statistics column of the crime data, there are many measures related to crime, but I'm only interested in the number of incidents (`Actual incidents`) and crime rate (`Rate per 100,000 population`), thus statistics related to charges are removed. The Crime Severity Index(`Percentage contribution to the Crime Severity Index (CSI)`) seems to be interesting and thus is kept.
 
-
-In the Statistics column of the crime data, there are many measures related to crime, but I'm only interested in the number of incidents (`Actual incidents`) and crime rate (`Rate per 100,000 population`), thus statistics related to charges are removed. The Crime Severity Index seems to be interesting and thus is kept.
-```{r include = FALSE}
+```{r eval = FALSE}
 crime_df <- crime_df %>% filter(Statistics == "Actual incidents" | 
                                 Statistics == "Rate per 100,000 population" | 
                                 Statistics == "Percentage contribution to the Crime Severity Index (CSI)")
-
 ```
 
 
-In the crime dataframe, there are 314 different types of crime, which does much more detailed categorization than I'm interested in. Therefore, to avoid having too much computation to merge data later on, I choose too keep only the bigger categories (i.e. total robbery, total assutls, etc). There are also square brackets at the end so I removed them.
-```{r include = FALSE}
+3. In the crime data frame, 
+  + there are 314 different types of crime, which does much more detailed categorization than I'm interested in. Therefore, to avoid having too much computation to merge data later on, I choose too keep only the bigger categories (i.e. total robbery, total assaults, etc). 
+  + There are also square brackets at the end so I removed them.
+  
+```{r eval = FALSE}
 print(length(unique(crime_df$Violations)))
 table(crime_df$Violations)
 
@@ -141,19 +108,19 @@ table(crime_df$Violations)
 total_rows <- grepl("^Total", crime_df$Violations)
 
 # Subset the dataframe to keep only the rows starting with "Total"
-total_violations_df <- crime_df[total_rows, , drop = FALSE]
+crime_df <- crime_df[total_rows, , drop = FALSE]
 
 # Remove square brackets and numbers at the end
-total_violations_df$Violations <- gsub("\\s*\\[\\d+\\]$", "", total_violations_df$Violations)
-
-crime_df <- total_violations_df
+crime_df$Violations <- gsub("\\s*\\[\\d+\\]$", "", crime_df$Violations)
 ```
 
-In the census data frame, 
-1. the column Age group specifies the age however since we do not have this information in the crime df, we need to combine all age groups. This can be done by taking the average of the categories
-2. Same for sex.
+3. In the census data frame: 
 
-```{r}
+  + the column Age group specifies the age however since we do not have this information in the crime df, we need to combine all age groups. This can be done by taking the average of the categories.
+  
+  + Same for sex, same method is used.
+
+```{r eval = FALSE}
 table(census_df$"Age group")
 table(census_df$"Sex")
 
@@ -162,30 +129,27 @@ census_df <- census_df %>%
   group_by(REF_DATE, GEO, Sex, `Income source`, Statistics, UOM, SCALAR_FACTOR) %>% 
   summarise(VALUE = mean(VALUE, na.rm = TRUE))
 
-
+# next we merge the age group categories
 census_df <- census_df_new %>% 
   group_by(REF_DATE, GEO, `Income source`, Statistics, UOM, SCALAR_FACTOR) %>% 
   summarise(VALUE = mean(VALUE, na.rm = TRUE))
 ```
 
-I keep only the data between 1998 and 2021, as that's the year range where the two data sets overlap.
+4. I keep only the data between 1998 and 2021, as that's the year range where the two data sets overlap.
 
-```{r include = FALSE}
+```{r eval = FALSE}
 crime_df <- crime_df %>% filter(REF_DATE >= 1998 & REF_DATE <= 2021)
 census_df <- census_df %>% filter(REF_DATE >= 1998 & REF_DATE <= 2021)
 ```
 
 
-```{r}
+5. Write the cleaned data frame to CSV files.
+
+```{r eval = FALSE}
 write.csv(crime_df, "/Users/yinuozhao/Desktop/UofT/JSC370/JSC370-2024-main/JSC370_project/crime.csv")
 write.csv(census_df, "/Users/yinuozhao/Desktop/UofT/JSC370/JSC370-2024-main/JSC370_project/census.csv")
 ```
 
-
-
-## Methods
-
-Include how and where the data were acquired, how you cleaned and wrangled the data, what tools you used for data exploration.
 
 ## Preliminary Results 
 
