@@ -45,28 +45,24 @@ However, it is worth mentioning that both data sets are huge and contains unrela
 fn1 <- "https://www.kaggle.com/datasets/mikekzan/who-alcohol-total-per-capita-consumption-rate?resource=download&select=WHOAlcoholTotalPerCapita_2021-09-20v2.csv"
 fn2 <- "https://data.novascotia.ca/api/views/daey-6b54/rows.csv?accessType=DOWNLOAD"
 
-if (!file.exists("census.csv"))
-  download.file(fn1, destfile = "census.csv")
-census_df <- data.table::fread("census.csv")
+if (!file.exists("census_original.csv"))
+  download.file(fn1, destfile = "census_original.csv")
+census_df <- data.table::fread("census_original.csv")
 
-if (!file.exists("crime.csv"))
-  download.file(fn2, destfile = "crime.csv")
-crime_df <- data.table::fread("crime.csv")
-```
-```{r}
-# head(crime_df)
-head(census_df)
+if (!file.exists("crime_original.csv"))
+  download.file(fn2, destfile = "crime_original.csv")
+crime_df <- data.table::fread("crime_original.csv")
 ```
 First I dropped the unrelated columns in both columns, keeping only information revelant to the question of interest.
 
-```{r echo=FALSE}
-crime_df <- crime_df[, c("REF_DATE", "GEO", "Violations", "Statistics", "UOM")]
-census_df <- census_df[, c("REF_DATE", "GEO", "Age group", "Sex", "Income source", "Statistics", "UOM", "SCALAR_FACTOR")]
+```{r include = FALSE}
+crime_df <- crime_df[, c("REF_DATE", "GEO", "Violations", "Statistics", "VALUE", "UOM")]
+census_df <- census_df[, c("REF_DATE", "GEO", "Age group", "Sex", "Income source", "Statistics", "VALUE", "UOM", "SCALAR_FACTOR")]
 ```
 
 I noticed that in the GEO column, both data sets uses a mix of province & city names. I removed all observations with city names and keep only those province data so that the dataset is smaller(since the province data contains cities already) and avoids redundancy.
 
-```{r echo=FALSE}
+```{r include = FALSE}
 # table(crime_df$GEO)
 table(census_df$GEO)
 
@@ -102,7 +98,7 @@ census_df <- census_df[census_df$GEO %in% provinces2, ]
 ```
 Notice that the census data only have data from the 10 provinces, not the 3 territories, I filtered out those data from the crime dataset as there are no matching data. 
 
-```{r echo=FALSE}
+```{r include = FALSE}
 table(census_df$GEO)
 provinces3 <- c("Alberta [48]", 
                "British Columbia [59]", 
@@ -120,7 +116,7 @@ head(crime_df)
 ```
 
 Notice that there is a square bracket with a number behind each province name in the crime data, therefore I removed it with regular expression so that we can join the two data sets on province later.
-```{r echo=FALSE}
+```{r include = FALSE}
 crime_df$GEO <- gsub("\\s*\\[\\d+\\]$", "", crime_df$GEO)
 table(crime_df$GEO)
 ```
@@ -128,24 +124,56 @@ table(crime_df$GEO)
 
 
 In the Statistics column of the crime data, there are many measures related to crime, but I'm only interested in the number of incidents (`Actual incidents`) and crime rate (`Rate per 100,000 population`), thus statistics related to charges are removed. The Crime Severity Index seems to be interesting and thus is kept.
-```{r echo=FALSE}
+```{r include = FALSE}
 crime_df <- crime_df %>% filter(Statistics == "Actual incidents" | 
                                 Statistics == "Rate per 100,000 population" | 
                                 Statistics == "Percentage contribution to the Crime Severity Index (CSI)")
 
-table(crime_df$Statistics)
 ```
 
 
-First I keep only the data between 1998 and 2021, as that's the year range where the two data sets overlap.
+In the crime dataframe, there are 314 different types of crime, which does much more detailed categorization than I'm interested in. Therefore, to avoid having too much computation to merge data later on, I choose too keep only the bigger categories (i.e. total robbery, total assutls, etc). There are also square brackets at the end so I removed them.
+```{r include = FALSE}
+print(length(unique(crime_df$Violations)))
+table(crime_df$Violations)
 
-```{r echo=FALSE}
+# Identify rows that start with "Total"
+total_rows <- grepl("^Total", crime_df$Violations)
+
+# Subset the dataframe to keep only the rows starting with "Total"
+total_violations_df <- crime_df[total_rows, , drop = FALSE]
+
+# Remove square brackets and numbers at the end
+total_violations_df$Violations <- gsub("\\s*\\[\\d+\\]$", "", total_violations_df$Violations)
+
+crime_df <- total_violations_df
+```
+
+In the census data frame, 
+1. the column Age group specifies the age however since we do not have this information in the crime df, we need to combine all age groups. This can be done by taking the average of the categories
+2. Same for sex.
+
+```{r}
+table(census_df$"Age group")
+table(census_df$"Sex")
+
+# first we merge the age group categories
+census_df <- census_df %>% 
+  group_by(REF_DATE, GEO, Sex, `Income source`, Statistics, UOM, SCALAR_FACTOR) %>% 
+  summarise(VALUE = mean(VALUE, na.rm = TRUE))
+
+
+census_df <- census_df_new %>% 
+  group_by(REF_DATE, GEO, `Income source`, Statistics, UOM, SCALAR_FACTOR) %>% 
+  summarise(VALUE = mean(VALUE, na.rm = TRUE))
+```
+
+I keep only the data between 1998 and 2021, as that's the year range where the two data sets overlap.
+
+```{r include = FALSE}
 crime_df <- crime_df %>% filter(REF_DATE >= 1998 & REF_DATE <= 2021)
 census_df <- census_df %>% filter(REF_DATE >= 1998 & REF_DATE <= 2021)
 ```
-
-
-
 
 
 ```{r}
