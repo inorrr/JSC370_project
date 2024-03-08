@@ -7,3 +7,163 @@ output:
     html_preview: false
 link-citations: yes
 ---
+
+
+```{r setup, message=FALSE, warning=FALSE}
+#install.packages(c("data.table","leaflet"))
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
+library(data.table)
+library(tidyverse)
+library(kableExtra)
+library(dplyr)
+library(splines)
+library(mgcv)
+
+```
+
+## Introduction
+
+Provide background on your data sets and a clear formulated question or hypothesis.
+
+Question of Interest: "How does crime rate relate to poverty in Canada?"
+
+In order to answer this question, data on both crime and socioeconomic status are needed. Since there are no existing data set that contains all desired information, two seperte data sets are obtained: 
+
+  1. "Income of individuals by age group, sex and income source, Canada, provinces and selected census metropolitan areas"
+  
+  2. "Incident-based crime statistics, by detailed violations, Canada, provinces, territories, Census Metropolitan Areas and Canadian Forces Military Police"
+  
+Both are from Statistics Canada and thus are reliable. Since they are from the same source, the data sets follows similar structure and all contains the two columns "GEO" and "REF_DATE" where the former one refers to the geographical region and the second one refers to the year of data. Thus, it's possible to combine the two data sets to obtain all information needed.
+
+However, it is worth mentioning that both data sets are huge and contains unrelated information. Therefore, cleaning and wrangling are needed for more convienent analysis and more efficient computing & uploading, as the origional data sets are oversized thus cannot be pushed to github repository.
+
+
+
+
+0. Load the datasets
+```{r checking-file}
+fn1 <- "https://www.kaggle.com/datasets/mikekzan/who-alcohol-total-per-capita-consumption-rate?resource=download&select=WHOAlcoholTotalPerCapita_2021-09-20v2.csv"
+fn2 <- "https://data.novascotia.ca/api/views/daey-6b54/rows.csv?accessType=DOWNLOAD"
+
+if (!file.exists("census.csv"))
+  download.file(fn1, destfile = "census.csv")
+census_df <- data.table::fread("census.csv")
+
+if (!file.exists("crime.csv"))
+  download.file(fn2, destfile = "crime.csv")
+crime_df <- data.table::fread("crime.csv")
+```
+```{r}
+# head(crime_df)
+head(census_df)
+```
+First I dropped the unrelated columns in both columns, keeping only information revelant to the question of interest.
+
+```{r echo=FALSE}
+crime_df <- crime_df[, c("REF_DATE", "GEO", "Violations", "Statistics", "UOM")]
+census_df <- census_df[, c("REF_DATE", "GEO", "Age group", "Sex", "Income source", "Statistics", "UOM", "SCALAR_FACTOR")]
+```
+
+I noticed that in the GEO column, both data sets uses a mix of province & city names. I removed all observations with city names and keep only those province data so that the dataset is smaller(since the province data contains cities already) and avoids redundancy.
+
+```{r echo=FALSE}
+# table(crime_df$GEO)
+table(census_df$GEO)
+
+provinces1 <- c("Alberta [48]", 
+               "British Columbia [59]", 
+               "Manitoba [46]", 
+               "New Brunswick [13]", 
+               "Newfoundland and Labrador [10]", 
+               "Yukon [60]", 
+               "Saskatchewan [47]",
+               "Nova Scotia [12]", 
+               "Nunavut [62]", 
+               "Ontario [35]", 
+               "Northwest Territories [61]",
+               "Prince Edward Island [11]",
+               "Quebec [24]")
+
+provinces2 <- c("Alberta", 
+               "British Columbia", 
+               "Manitoba", 
+               "New Brunswick", 
+               "Newfoundland and Labrador", 
+               "Yukon", 
+               "Saskatchewan",
+               "Nova Scotia", 
+               "Nunavut", 
+               "Ontario", 
+               "Northwest Territories",
+               "Prince Edward Island",
+               "Quebec")
+crime_df <- crime_df[crime_df$GEO %in% provinces1, ]
+census_df <- census_df[census_df$GEO %in% provinces2, ]
+```
+Notice that the census data only have data from the 10 provinces, not the 3 territories, I filtered out those data from the crime dataset as there are no matching data. 
+
+```{r echo=FALSE}
+table(census_df$GEO)
+provinces3 <- c("Alberta [48]", 
+               "British Columbia [59]", 
+               "Manitoba [46]", 
+               "New Brunswick [13]", 
+               "Newfoundland and Labrador [10]", 
+               "Saskatchewan [47]",
+               "Nova Scotia [12]", 
+               "Ontario [35]", 
+               "Prince Edward Island [11]",
+               "Quebec [24]")
+
+crime_df <- crime_df[crime_df$GEO %in% provinces3, ]
+head(crime_df)
+```
+
+Notice that there is a square bracket with a number behind each province name in the crime data, therefore I removed it with regular expression so that we can join the two data sets on province later.
+```{r echo=FALSE}
+crime_df$GEO <- gsub("\\s*\\[\\d+\\]$", "", crime_df$GEO)
+table(crime_df$GEO)
+```
+
+
+
+In the Statistics column of the crime data, there are many measures related to crime, but I'm only interested in the number of incidents (`Actual incidents`) and crime rate (`Rate per 100,000 population`), thus statistics related to charges are removed. The Crime Severity Index seems to be interesting and thus is kept.
+```{r echo=FALSE}
+crime_df <- crime_df %>% filter(Statistics == "Actual incidents" | 
+                                Statistics == "Rate per 100,000 population" | 
+                                Statistics == "Percentage contribution to the Crime Severity Index (CSI)")
+
+table(crime_df$Statistics)
+```
+
+
+First I keep only the data between 1998 and 2021, as that's the year range where the two data sets overlap.
+
+```{r echo=FALSE}
+crime_df <- crime_df %>% filter(REF_DATE >= 1998 & REF_DATE <= 2021)
+census_df <- census_df %>% filter(REF_DATE >= 1998 & REF_DATE <= 2021)
+```
+
+
+
+
+
+```{r}
+write.csv(crime_df, "/Users/yinuozhao/Desktop/UofT/JSC370/JSC370-2024-main/JSC370_project/crime.csv")
+write.csv(census_df, "/Users/yinuozhao/Desktop/UofT/JSC370/JSC370-2024-main/JSC370_project/census.csv")
+```
+
+
+
+## Methods
+
+Include how and where the data were acquired, how you cleaned and wrangled the data, what tools you used for data exploration.
+
+## Preliminary Results 
+
+Provide summary statistics in tabular from and publication-quality figures, take a look at the kable function from knitr to write nice tables in Rmarkdown
+
+
+## Summary
+
+What you found so far from your data in terms of the formulated question.
