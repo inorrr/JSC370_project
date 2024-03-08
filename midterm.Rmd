@@ -46,13 +46,13 @@ However, it is worth mentioning that both data sets are huge and contains **unre
 fn1 <- "https://raw.githubusercontent.com/inorrr/JSC370_project/main/census.csv"
 fn2 <- "https://raw.githubusercontent.com/inorrr/JSC370_project/main/crime.csv"
 
-if (!file.exists("census_original.csv"))
-  download.file(fn1, destfile = "census_original.csv")
-census_df <- data.table::fread("census_original.csv")
+if (!file.exists("census.csv"))
+  download.file(fn1, destfile = "census.csv")
+census_df <- data.table::fread("census.csv")
 
-if (!file.exists("crime_original.csv"))
-  download.file(fn2, destfile = "crime_original.csv")
-crime_df <- data.table::fread("crime_original.csv")
+if (!file.exists("crime.csv"))
+  download.file(fn2, destfile = "crime.csv")
+crime_df <- data.table::fread("crime.csv")
 ```
 
 1. First I dropped the unrelated columns in both columns, keeping only information revelant to the question of interest.
@@ -149,6 +149,8 @@ census_df <- census_df %>% filter(REF_DATE >= 1998 & REF_DATE <= 2021)
 write.csv(crime_df, "/Users/yinuozhao/Desktop/UofT/JSC370/JSC370-2024-main/JSC370_project/crime.csv")
 write.csv(census_df, "/Users/yinuozhao/Desktop/UofT/JSC370/JSC370-2024-main/JSC370_project/census.csv")
 ```
+
+6. Notice that right now both datasets are in long format, I converted them to wide for convenience. 
 
 
 ## Preliminary Results 

@@ -403,13 +403,13 @@ cannot be pushed to github repository.</p>
 <pre class="r"><code>fn1 &lt;- &quot;https://raw.githubusercontent.com/inorrr/JSC370_project/main/census.csv&quot;
 fn2 &lt;- &quot;https://raw.githubusercontent.com/inorrr/JSC370_project/main/crime.csv&quot;
 
-if (!file.exists(&quot;census_original.csv&quot;))
-  download.file(fn1, destfile = &quot;census_original.csv&quot;)
-census_df &lt;- data.table::fread(&quot;census_original.csv&quot;)
+if (!file.exists(&quot;census.csv&quot;))
+  download.file(fn1, destfile = &quot;census.csv&quot;)
+census_df &lt;- data.table::fread(&quot;census.csv&quot;)
 
-if (!file.exists(&quot;crime_original.csv&quot;))
-  download.file(fn2, destfile = &quot;crime_original.csv&quot;)
-crime_df &lt;- data.table::fread(&quot;crime_original.csv&quot;)</code></pre>
+if (!file.exists(&quot;crime.csv&quot;))
+  download.file(fn2, destfile = &quot;crime.csv&quot;)
+crime_df &lt;- data.table::fread(&quot;crime.csv&quot;)</code></pre>
 <ol style="list-style-type: decimal">
 <li>First I dropped the unrelated columns in both columns, keeping only
 information revelant to the question of interest.</li>
@@ -514,6 +514,10 @@ census_df &lt;- census_df %&gt;% filter(REF_DATE &gt;= 1998 &amp; REF_DATE &lt;=
 </ol>
 <pre class="r"><code>write.csv(crime_df, &quot;/Users/yinuozhao/Desktop/UofT/JSC370/JSC370-2024-main/JSC370_project/crime.csv&quot;)
 write.csv(census_df, &quot;/Users/yinuozhao/Desktop/UofT/JSC370/JSC370-2024-main/JSC370_project/census.csv&quot;)</code></pre>
+<ol start="6" style="list-style-type: decimal">
+<li>Notice that right now both datasets are in long format, I converted
+them to wide for convenience.</li>
+</ol>
 </div>
 <div id="preliminary-results" class="section level2">
 <h2>Preliminary Results</h2>
