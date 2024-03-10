@@ -439,7 +439,7 @@ ggplot(data = joint_df, aes(x = `Average income (excluding zeros)`, y = `Rate pe
   geom_point(alpha = 0.3) +
   geom_smooth(method = "lm", se = FALSE, size = 1.0) + 
   guides(size = FALSE) + # remove "size" from legend
-  labs(x = "Average Total Income (excluding zeros)", y = "Total Crime Rate per 100,000 population`", title = "Average Total Income and Total Crime Rate by Pronvince") +
+  labs(x = "Average Total Income (excluding zeros)", y = "Total Crime Rate per 100,000 population`", title = "Average Total Income and Total Crime Rate") +
   theme_linedraw() + 
   scale_color_discrete(name = "Provinces") +
   theme(axis.text = element_text(size = 7)) +
@@ -461,8 +461,106 @@ summary_table <- summary_stats %>%
   kable_styling(fixed_thead = T)
 summary_table
 ```
- 
 
+```{r, echo = FALSE, fig.align='center', fig.width=12, fig.height=6}
+filtered_census <- census_df %>% filter(`Income source` == "Employment income") 
+filtered_crime <- crime_df %>%filter(Violations=="Total robbery")
+
+joint_df <- inner_join(filtered_crime, filtered_census, by = c("REF_DATE", "GEO"))
+
+plot1 <- ggplot(data = joint_df, aes(x = `Average income (excluding zeros)`, y = `Rate per 100,000 population`, color = GEO, size = 3)) +
+  geom_point(alpha = 0.3) +
+  geom_smooth(method = "lm", se = FALSE, size = 1.0) + 
+  guides(size = FALSE) + # remove "size" from legend
+  labs(x = "Average Employment Income (excluding zeros)", 
+       y = "Robbery Crime Rate per 100,000 population`", 
+       title = "Average Employment Income vs Robbery Crime Rate") +
+  theme_linedraw() + 
+  scale_color_discrete(name = "Provinces") +
+  theme(axis.text = element_text(size = 7)) +
+  theme(plot.title = element_text(face = "bold")) +
+  theme(legend.position = "none") +
+  theme(legend.title = element_text(face = "bold")) +
+  theme(plot.margin = margin(0.5, 0.5, 0.5, 0.5, "cm"))
+```
+
+```{r, echo = FALSE, fig.align='center', fig.width=12, fig.height=6}
+filtered_census <- census_df %>% filter(`Income source` == "Market income") 
+filtered_crime <- crime_df %>%filter(Violations=="Total property crime violations")
+
+joint_df <- inner_join(filtered_crime, filtered_census, by = c("REF_DATE", "GEO"))
+
+plot2 <- ggplot(data = joint_df, aes(x = `Average income (excluding zeros)`, y = `Rate per 100,000 population`, color = GEO, size = 3)) +
+  geom_point(alpha = 0.3) +
+  geom_smooth(method = "lm", se = FALSE, size = 1.0) + 
+  guides(size = FALSE) + # remove "size" from legend
+  labs(x = "Average Market Income (excluding zeros)", 
+       y = "Property Crime Rate per 100,000 population`", 
+       title = "Average Market Income vs Property Crime Rate") +
+  theme_linedraw() + 
+  scale_color_discrete(name = "Provinces") +
+  theme(axis.text = element_text(size = 7)) +
+  theme(plot.title = element_text(face = "bold")) +
+  theme(legend.position = "none") +
+  theme(legend.title = element_text(face = "bold")) +
+  theme(plot.margin = margin(0.5, 0.5, 0.5, 0.5, "cm"))
+```
+
+```{r, echo = FALSE, fig.align='center', fig.width=12, fig.height=6}
+filtered_census <- census_df %>% filter(`Income source` == "Government transfers") 
+filtered_crime <- crime_df %>%filter(Violations=="Total prostitution")
+
+joint_df <- inner_join(filtered_crime, filtered_census, by = c("REF_DATE", "GEO"))
+
+plot3 <- ggplot(data = joint_df, aes(x = `Average income (excluding zeros)`, y = `Rate per 100,000 population`, color = GEO, size = 3)) +
+  geom_point(alpha = 0.3) +
+  geom_smooth(method = "lm", se = FALSE, size = 1.0) + 
+  guides(size = FALSE) + # remove "size" from legend
+  labs(x = "Average Employment Income (excluding zeros)", 
+       y = "Prostitution Crime Rate per 100,000 population`", 
+       title = "Average Employment Income vs Prostitution Crime Rate") +
+  theme_linedraw() + 
+  scale_color_discrete(name = "Provinces") +
+  theme(axis.text = element_text(size = 7)) +
+  theme(plot.title = element_text(face = "bold")) +
+  theme(legend.position = "none") +
+  theme(legend.title = element_text(face = "bold")) +
+  theme(plot.margin = margin(0.5, 0.5, 0.5, 0.5, "cm"))
+```
+
+```{r, echo = FALSE, fig.align='center', fig.width=15, fig.height=5}
+grid.arrange(plot1, plot2, plot3, nrow = 1)
+```
+
+Pick a province to look closer
+
+```{r, echo = FALSE, fig.align='center', fig.width=15, fig.height=8}
+filtered_census <- census_df %>% filter(GEO == "Ontario")
+filtered_crime <- crime_df %>%filter(GEO == "Ontario")  %>% filter(Violations != "Total, all violations")
+
+joint_df <- inner_join(filtered_crime, filtered_census, by = c("REF_DATE", "GEO"))
+
+ggplot(data = filtered_crime, aes(x = REF_DATE, fill = Violations, y = `Actual incidents`)) +
+  geom_bar(stat = "identity", position = "stack", color = "black", width = 0.5) + 
+  labs(title = "Incidents of Crime Cases by Type in Ontario", x = "Year", y = "Number of Incidents") +
+  theme_linedraw() + 
+  theme(axis.text = element_text(size = 7)) +
+  theme(legend.position = "none") +
+  theme(plot.title = element_text(face = "bold")) +
+  theme(plot.margin = margin(0.5, 0.5, 0.5, 0.5, "cm"))
+```
+
+```{r, echo = FALSE, fig.align='right', fig.width=15, fig.height=4}
+ggplot(data = filtered_crime, aes(x = REF_DATE, fill = Violations, y = `Actual incidents`)) +
+  geom_bar(stat = "identity", position = "stack", color = "white", width = 0.01) + 
+  theme_void() + 
+  theme(legend.position = "left") +
+  theme(legend.margin = margin(10, 10, 10, 50))
+```
+
+
+
+ 
 
 ## Summary
 
