@@ -18,6 +18,8 @@ library(kableExtra)
 library(dplyr)
 library(splines)
 library(mgcv)
+library(gridExtra)
+library(cowplot)
 ```
 
 ## Introduction
@@ -229,11 +231,237 @@ This data is from Prince Edward Island in 2004, and the income source is "other 
 
 ## Preliminary Results 
 
-Provide summary statistics in tabular from and publication-quality figures, take a look at the kable function from knitr to write nice tables in Rmarkdown
+*Provide summary statistics in tabular from and publication-quality figures, take a look at the kable function from knitr to write nice tables in Rmarkdown*
 
-```{r}
+1. Firstly, I examined the trend in crime rate across provinces and crime types.
+
+```{r, fig.align='center', fig.width=10, fig.height=5}
+filtered_data = crime_df %>% filter(Violations=="Total, all violations")
+unique_x_values <- unique(crime_df$REF_DATE)
+ggplot(filtered_data, aes(x = REF_DATE, y = `Rate per 100,000 population`, color = GEO)) +
+  geom_line() +
+  labs(x = "Year", y = "Rate per 100,000 population", title = "Rates of Total Crime by Province") +
+  scale_x_continuous(breaks = unique_x_values) + 
+  scale_color_discrete(name = "Provinces") + 
+  theme_linedraw() +
+  theme(legend.position = "right") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) + 
+  theme(plot.title = element_text(face = "bold")) + 
+  theme(plot.margin = margin(0.5, 0.5, 0.5, 0.5, "cm")) + 
+  theme(axis.text = element_text(size = 7)) + 
+  theme(legend.title = element_text(face = "bold"))
 
 ```
+The plot depicts the **total crime rate**, encompassing all types of crimes, from 1998 to 2021, with each province represented by a distinct color. The crime rate is measured per 100,000 population. Notably, Saskatchewan consistently exhibits a significantly higher crime rate compared to other provinces throughout the period of 1998 to 2021. Conversely, Quebec and Ontario consistently demonstrate the lowest crime rates. Across all provinces, there is a discernible decreasing trend in crime rates over the years, with many provinces experiencing peak crime rates in 2003-2004.
+
+
+In addition to analyzing total crime, I delved into specific crime categories often associated with poverty: **break and enter**, **robbery**, and **prostitution**. The three accompanying plots illustrate their respective rates over the years. Overall, there is a decreasing trend in the rates of all three crimes, with occasional exceptions such as robbery rates in Manitoba. Notably, British Columbia stands out with a significantly high rate of prostitution in 2004, doubling the number reported in Saskatchewan, which held the second-highest rate that year.
+
+*Note that the 3 plots below shares the same legend with the above plots. Therefore the legend is omited for better display purpose. Codes are also not shown as they reuses the above code chunk.*
+
+```{r, echo = FALSE, fig.align='center', fig.width=10, fig.height=5}
+filtered_data = crime_df %>% filter(Violations=="Total breaking and entering")
+plot1 <- ggplot(filtered_data, aes(x = REF_DATE, y = `Rate per 100,000 population`, color = GEO)) +
+  geom_line() +
+  labs(x = "Year", y = "Rate per 100,000 population", title = "Rates of Break and Enter by Province") +
+  scale_x_continuous(breaks = unique_x_values) + 
+  scale_color_discrete(name = "Provinces") + 
+  theme_linedraw() +
+  theme(legend.position = "none") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) + 
+  theme(plot.title = element_text(face = "bold")) + 
+  theme(plot.margin = margin(0.5, 0.5, 0.5, 0.5, "cm")) + 
+  theme(axis.text = element_text(size = 7)) + 
+  theme(legend.title = element_text(face = "bold"))
+
+filtered_data = crime_df %>% filter(Violations=="Total robbery")
+plot2 <- ggplot(filtered_data, aes(x = REF_DATE, y = `Rate per 100,000 population`, color = GEO)) +
+  geom_line() +
+  labs(x = "Year", y = "Rate per 100,000 population", title = "Rates of Robbery by Province") +
+  scale_x_continuous(breaks = unique_x_values) + 
+  scale_color_discrete(name = "Provinces") + 
+  theme_linedraw() +
+  theme(legend.position = "none") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) + 
+  theme(plot.title = element_text(face = "bold")) + 
+  theme(plot.margin = margin(0.5, 0.5, 0.5, 0.5, "cm")) + 
+  theme(axis.text = element_text(size = 7)) + 
+  theme(legend.title = element_text(face = "bold"))
+
+filtered_data = crime_df %>% filter(Violations=="Total prostitution")
+plot3 <- ggplot(filtered_data, aes(x = REF_DATE, y = `Rate per 100,000 population`, color = GEO)) +
+  geom_line() +
+  labs(x = "Year", y = "Rate per 100,000 population", title = "Rates of Prostitution by Province") +
+  scale_x_continuous(breaks = unique_x_values) + 
+  scale_color_discrete(name = "Provinces") + 
+  theme_linedraw() +
+  theme(legend.position = "none") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) + 
+  theme(plot.title = element_text(face = "bold")) + 
+  theme(plot.margin = margin(0.5, 0.5, 0.5, 0.5, "cm")) + 
+  theme(axis.text = element_text(size = 7)) + 
+  theme(legend.title = element_text(face = "bold"))
+```
+
+```{r, echo = FALSE, fig.align='center', fig.width=15, fig.height=5}
+grid.arrange(plot1, plot2, plot3, nrow = 1)
+```
+
+Below is a table summarizing the average crime rate of all crime types (`Total, all violations` is excluded) by province and year. The cells are colored by value, where lighter color means higher value and darker color means smaller value. Scrolling down the table, we can see that for all provinces, the average crime rate has a decreasing trend as the colors are getting dark in each column. This agree with what I found and infered from the previous plots.
+
+```{r, echo = FALSE, fig.align='center'}
+summary_stats <- crime_df %>% filter(Violations != "Total, all violations") %>% 
+                                       group_by(REF_DATE, GEO) %>% 
+                                       summarize(`Average Rate` = mean(`Rate per 100,000 population`))
+summary_stats <- summary_stats %>% pivot_wider(names_from = GEO, values_from = 'Average Rate') 
+summary_stats <- summary_stats %>% rename(Year = REF_DATE)
+summary_table <- summary_stats %>%
+  kable("html") %>%
+  kable_styling(bootstrap_options = "striped", full_width = TRUE) %>%
+  add_header_above(c("Table of Average Crime Rate Across All Types" = 11)) %>% 
+  scroll_box(width = "100%", height = "500px") %>% 
+  kable_styling(fixed_thead = T) %>% 
+  column_spec(2, color = "white", background = spec_color(summary_stats$Alberta)) %>%
+  column_spec(3, color = "white", background = spec_color(summary_stats$`British Columbia`)) %>%
+  column_spec(4, color = "white", background = spec_color(summary_stats$Manitoba)) %>%
+  column_spec(5, color = "white", background = spec_color(summary_stats$`New Brunswick`)) %>%
+  column_spec(6, color = "white", background = spec_color(summary_stats$`Newfoundland and Labrador`)) %>%
+  column_spec(7, color = "white", background = spec_color(summary_stats$`Nova Scotia`)) %>%
+  column_spec(8, color = "white", background = spec_color(summary_stats$Ontario)) %>%
+  column_spec(9, color = "white", background = spec_color(summary_stats$`Prince Edward Island`)) %>%
+  column_spec(10, color = "white", background = spec_color(summary_stats$Quebec)) %>%
+  column_spec(11, color = "white", background = spec_color(summary_stats$Saskatchewan))
+summary_table
+```
+
+
+
+Given the general decrease in crime rates, I am interested in exploring the trend of income to ascertain the potential existence of an association.
+
+```{r, echo=FALSE, fig.align='center', fig.width=10, fig.height=5}
+filtered_data = census_df %>% filter(`Income source`=="Total income")
+unique_x_values <- unique(census_df$REF_DATE)
+ggplot(filtered_data, aes(x = REF_DATE, y = `Average income (excluding zeros)`, color = GEO)) +
+  geom_line() +
+  labs(x = "Year", y = "Total income", title = "Average Total Income (excluding zeros) by Province") +
+  scale_x_continuous(breaks = unique_x_values) +
+  scale_color_discrete(name = "Provinces") +
+  theme_linedraw() +
+  theme(legend.position = "right") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  theme(plot.title = element_text(face = "bold")) +
+  theme(plot.margin = margin(0.5, 0.5, 0.5, 0.5, "cm")) +
+  theme(axis.text = element_text(size = 7)) +
+  theme(legend.title = element_text(face = "bold"))
+```
+```{r, echo = FALSE, fig.align='center', fig.width=15, fig.height=5}
+filtered_data = census_df %>% filter(`Income source`=="Employment income")
+plot1 <- ggplot(filtered_data, aes(x = REF_DATE, y = `Average income (excluding zeros)`, color = GEO)) +
+  geom_line() +
+  labs(x = "Year", y = "Average Income (excluding zeros)", title = "Average Employment Income by Province") +
+  scale_x_continuous(breaks = unique_x_values) +
+  scale_color_discrete(name = "Provinces") +
+  theme_linedraw() +
+  theme(legend.position = "none") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  theme(plot.title = element_text(face = "bold")) +
+  theme(plot.margin = margin(0.5, 0.5, 0.5, 0.5, "cm")) +
+  theme(axis.text = element_text(size = 7)) +
+  theme(legend.title = element_text(face = "bold"))
+
+filtered_data = census_df %>% filter(`Income source`=="Investment income")
+plot2 <- ggplot(filtered_data, aes(x = REF_DATE, y = `Average income (excluding zeros)`, color = GEO)) +
+  geom_line() +
+  labs(x = "Year", y = "Average Income (excluding zeros)", title = "Average Investment Income by Province") +
+  scale_x_continuous(breaks = unique_x_values) +
+  scale_color_discrete(name = "Provinces") +
+  theme_linedraw() +
+  theme(legend.position = "none") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  theme(plot.title = element_text(face = "bold")) +
+  theme(plot.margin = margin(0.5, 0.5, 0.5, 0.5, "cm")) +
+  theme(axis.text = element_text(size = 7)) +
+  theme(legend.title = element_text(face = "bold"))
+
+filtered_data = census_df %>% filter(`Income source`=="Market income")
+plot3 <- ggplot(filtered_data, aes(x = REF_DATE, y = `Average income (excluding zeros)`, color = GEO)) +
+  geom_line() +
+  labs(x = "Year", y = "Average Income (excluding zeros)", title = "Average Market Income by Province") +
+  scale_x_continuous(breaks = unique_x_values) +
+  scale_color_discrete(name = "Provinces") +
+  theme_linedraw() +
+  theme(legend.position = "none") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  theme(plot.title = element_text(face = "bold")) +
+  theme(plot.margin = margin(0.5, 0.5, 0.5, 0.5, "cm")) +
+  theme(axis.text = element_text(size = 7)) +
+  theme(legend.title = element_text(face = "bold"))
+
+grid.arrange(plot1, plot2, plot3, nrow = 1)
+```
+
+```{r, echo = FALSE, fig.align='center'}
+summary_stats <- census_df %>% filter(`Income source` == "Total income") %>% 
+                                       group_by(REF_DATE, GEO) %>% 
+                                       summarize(`Total Income` = `Average income (excluding zeros)`)
+
+summary_stats <- summary_stats %>% pivot_wider(names_from = GEO, values_from = `Total Income`) 
+
+summary_stats <- summary_stats %>% rename(Year = REF_DATE)
+
+summary_table <- summary_stats %>%
+  kable("html") %>%
+  kable_styling(bootstrap_options = "striped", full_width = TRUE) %>%
+  add_header_above(c("Table of Average Total Income" = 11)) %>% 
+  scroll_box(width = "100%", height = "500px") %>% 
+  kable_styling(fixed_thead = T) %>% 
+  column_spec(2, color = "white", background = spec_color(summary_stats$Alberta)) %>%
+  column_spec(3, color = "white", background = spec_color(summary_stats$`British Columbia`)) %>%
+  column_spec(4, color = "white", background = spec_color(summary_stats$Manitoba)) %>%
+  column_spec(5, color = "white", background = spec_color(summary_stats$`New Brunswick`)) %>%
+  column_spec(6, color = "white", background = spec_color(summary_stats$`Newfoundland and Labrador`)) %>%
+  column_spec(7, color = "white", background = spec_color(summary_stats$`Nova Scotia`)) %>%
+  column_spec(8, color = "white", background = spec_color(summary_stats$Ontario)) %>%
+  column_spec(9, color = "white", background = spec_color(summary_stats$`Prince Edward Island`)) %>%
+  column_spec(10, color = "white", background = spec_color(summary_stats$Quebec)) %>%
+  column_spec(11, color = "white", background = spec_color(summary_stats$Saskatchewan))
+summary_table
+```
+
+
+```{r, echo = FALSE, fig.align='center', fig.width=12, fig.height=6}
+filtered_census <- census_df %>% filter(`Income source` == "Total income") 
+filtered_crime <- crime_df %>%filter(Violations=="Total, all violations")
+
+joint_df <- inner_join(filtered_crime, filtered_census, by = c("REF_DATE", "GEO"))
+
+ggplot(data = joint_df, aes(x = `Average income (excluding zeros)`, y = `Rate per 100,000 population`, color = GEO, size = 3)) +
+  geom_point(alpha = 0.3) +
+  geom_smooth(method = "lm", se = FALSE, size = 1.0) + 
+  guides(size = FALSE) + # remove "size" from legend
+  labs(x = "Average Total Income (excluding zeros)", y = "Total Crime Rate per 100,000 population`", title = "Average Total Income and Total Crime Rate by Pronvince") +
+  theme_linedraw() + 
+  scale_color_discrete(name = "Provinces") +
+  theme(axis.text = element_text(size = 7)) +
+  theme(plot.title = element_text(face = "bold")) +
+  theme(legend.title = element_text(face = "bold")) +
+  theme(plot.margin = margin(0.5, 0.5, 0.5, 0.5, "cm"))
+```
+```{r}
+summary_stats <- joint_df %>% 
+  group_by(GEO) %>% 
+  summarise(Correlation = cor(`Average income (excluding zeros)`, `Rate per 100,000 population`))
+
+summary_stats <- summary_stats %>% rename(Province = GEO)
+
+summary_table <- summary_stats %>%
+  kable("html") %>%
+  kable_styling(bootstrap_options = "striped", full_width = FALSE) %>%
+  add_header_above(c("Correlation between Average Total Income and Total Crime Rate" = 2)) %>% 
+  kable_styling(fixed_thead = T)
+summary_table
+```
+ 
 
 
 ## Summary
