@@ -356,14 +356,6 @@ display: none;
 </div>
 
 
-<pre class="r"><code>#install.packages(c(&quot;data.table&quot;,&quot;leaflet&quot;))
-knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
-library(data.table)
-library(tidyverse)
-library(kableExtra)
-library(dplyr)
-library(splines)
-library(mgcv)</code></pre>
 <div id="introduction" class="section level2">
 <h2>Introduction</h2>
 <p><em>“Provide background on your data sets and a clear formulated
@@ -376,30 +368,51 @@ that contains all desired information, therefore this needs to be
 achieved through merging more than one data sets. Aftering choosing
 carefully, the following two separate data sets are obtained:</p>
 <ol style="list-style-type: decimal">
-<li><p>“Income of individuals by age group, sex and income source,
-Canada, provinces and selected census metropolitan areas”</p></li>
-<li><p>“Incident-based crime statistics, by detailed violations, Canada,
-provinces, territories, Census Metropolitan Areas and Canadian Forces
-Military Police”</p></li>
+<li><p><strong>“Income of individuals by age group, sex and income
+source, Canada, provinces and selected census metropolitan
+areas”</strong>. Released 2023-05-02. This data set is annually updated
+and maintained by Statistics Canada (Table 11-10-0239-01). Data is
+collected through the Survey of Labor and Income Dynamics, Survey of
+Consumer Finances, and Canadian Income Survey.</p></li>
+<li><p><strong>“Incident-based crime statistics, by detailed violations,
+Canada, provinces, territories, Census Metropolitan Areas and Canadian
+Forces Military Police”</strong>. Released 2023-07-27. This data set is
+also annually updated and maintained by Statistics Canada (Table
+35-10-0177-01, formerly CANSIM 252-0051). Data is collected through the
+Uniform Crime Reporting Survey.</p></li>
 </ol>
+<p>Understanding the relationship between crime rates and poverty in
+Canada is crucial for policymakers, law enforcement agencies, and social
+welfare programs. Exploring this correlation can shed light on the
+socioeconomic factors driving criminal behavior and help formulate
+targeted interventions to alleviate poverty and reduce crime.
+Additionally, elucidating this connection can inform broader discussions
+on social inequality, justice, and community well-being in Canadian
+society.</p>
 </div>
 <div id="methods" class="section level2">
 <h2>Methods</h2>
 <p><em>“Include how and where the data were acquired, how you cleaned
 and wrangled the data, what tools you used for data
 exploration.”</em></p>
-<p>Both are downloaded directly from <strong>Statistics Canada</strong>,
-which is considered to be an reliable source. Since they are from the
-same source, the data sets follows similar structure and all contains
-the two columns “GEO” and “REF_DATE” where the former one refers to the
-geographical region and the second one refers to the year of data. Thus,
-it’s possible to combine the two data sets to obtain all information
+<p>Both data sets are downloaded directly from <strong>Statistics
+Canada</strong>, which is usually considered to be an reliable source.
+Because they share the same source, the data sets follows similar
+structure and all contains the two columns <code>GEO</code> and
+<code>REF_DATE</code> where the former one refers to the geographical
+region and the second one refers to the year of data. Thus, it’s
+possible to combine the two data sets to obtain all information
 needed.</p>
 <p>However, it is worth mentioning that both data sets are huge and
 contains <strong>unrelated information</strong>. Therefore, cleaning and
 wrangling are needed for more convenient analysis and more efficient
 computing &amp; uploading, as the original data sets are oversize thus
 cannot be pushed to github repository.</p>
+<p>Reference:</p>
+<ol style="list-style-type: decimal">
+<li>The census data set: <a href="https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=1110023901" class="uri">https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=1110023901</a></li>
+<li>The crime data set: <a href="https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=3510017701" class="uri">https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=3510017701</a></li>
+</ol>
 <pre class="r"><code>fn1 &lt;- &quot;https://raw.githubusercontent.com/inorrr/JSC370_project/main/census.csv&quot;
 fn2 &lt;- &quot;https://raw.githubusercontent.com/inorrr/JSC370_project/main/crime.csv&quot;
 
@@ -410,6 +423,8 @@ census_df &lt;- data.table::fread(&quot;census.csv&quot;)
 if (!file.exists(&quot;crime.csv&quot;))
   download.file(fn2, destfile = &quot;crime.csv&quot;)
 crime_df &lt;- data.table::fread(&quot;crime.csv&quot;)</code></pre>
+<div id="data-wrangling-and-cleaning" class="section level3">
+<h3>Data Wrangling and Cleaning</h3>
 <ol style="list-style-type: decimal">
 <li>First I dropped the unrelated columns in both columns, keeping only
 information revelant to the question of interest.</li>
@@ -514,10 +529,87 @@ census_df &lt;- census_df %&gt;% filter(REF_DATE &gt;= 1998 &amp; REF_DATE &lt;=
 </ol>
 <pre class="r"><code>write.csv(crime_df, &quot;/Users/yinuozhao/Desktop/UofT/JSC370/JSC370-2024-main/JSC370_project/crime.csv&quot;)
 write.csv(census_df, &quot;/Users/yinuozhao/Desktop/UofT/JSC370/JSC370-2024-main/JSC370_project/census.csv&quot;)</code></pre>
-<ol start="6" style="list-style-type: decimal">
-<li>Notice that right now both datasets are in long format, I converted
-them to wide for convenience.</li>
-</ol>
+<p>At this point both the crime data frame and census data frame has
+<code>REF_DATE</code> and <code>GEO</code> in common, and they each have
+another <strong>categorical variable</strong>, which is
+<code>Income source</code> for census data and <code>Violation</code>(it
+means crime type) for crime data. While it may seem to make sense to
+join the two data sets using REF_DATE and GEO directly, the results
+would involves the data for all combinations of Income source and
+Violation for each REF_DATE and GEO. This will be a huge data set and
+thus slow down the computation. Therefore, I choose to <strong>keep the
+data sets separate</strong> and <strong>join them when
+necessary</strong> (i.e. after picking out certain categories of
+interest).</p>
+</div>
+<div id="exploratory-data-analysis" class="section level3">
+<h3>Exploratory Data Analysis</h3>
+<p>Notice that right now both data sets are in long format, I converted
+them to wide for convenience.</p>
+<pre class="r"><code>crime_df &lt;- pivot_wider(crime_df, id_cols = c(REF_DATE, GEO, Violations), 
+                        names_from = Statistics, values_from = VALUE)
+crime_df &lt;- na.omit(crime_df)
+
+census_df &lt;- pivot_wider(census_df, id_cols = c(REF_DATE, GEO, `Income source`), 
+                         names_from = Statistics, values_from = VALUE)
+census_df &lt;- na.omit(census_df)</code></pre>
+<p><em>Check the dimensions and headers and footers of the data</em></p>
+<pre class="r"><code>dim(census_df)
+dim(crime_df)
+head(crime_df)
+tail(crime_df)
+head(census_df)
+tail(census_df)</code></pre>
+<p>The census data set has 8 variables with 3613 observations, the crime
+dataset has 6 variables with 9271 observations. By looking at the
+headers and footers of both data sets, they seems to be imported
+correctly and contains no missing values (in the displayed rows).</p>
+<p><em>Check the variable types in the data</em></p>
+<pre class="r"><code>str(census_df)
+str(crime_df)
+summary(census_df)
+summary(crime_df)</code></pre>
+<p>In both data frames, we see that the variable types are a mix of
+integer, numeric and characters. All variable types correctly align with
+the context of the variables. No major problems arises with the data at
+this stage (i.e. a variable with all missing values.)</p>
+<p><em>Take a closer look at some/all of the variables</em></p>
+<p>For both data frame, we need <code>REF_DATE</code> and
+<code>GEO</code> to correctly identify a province in Canada with a valid
+year. For census data frame, we need to look at the values of the
+different types of income (median, aggregate, etc). For the crime data
+frame, we need to look at the recorded crime rate and actual number of
+incidents to be within the reasonable range.</p>
+<pre class="r"><code>table(census_df$REF_DATE)
+table(census_df$GEO)
+table(crime_df$REF_DATE)
+table(crime_df$GEO)
+summary(census_df$`Aggregate income`)
+summary(census_df$`Average income (excluding zeros)`)
+summary(census_df$`Median income (excluding zeros)`)
+summary(crime_df$`Actual incidents`)
+summary(crime_df$`Rate per 100,000 population`)</code></pre>
+<p>Both data sets contains data from 1998 to 2021, on the 10 provinces
+in Canada as desired because I cleaned the data sets this way. Other
+variables being checked are within the reasonable range. The aggregate
+income, average income and median income are all measured in 2021
+constant dollars, aggregate income record numbers in millions. The crime
+rates are measured as number of incidents per 100,000 population.</p>
+<p><em>Validate with an external source</em></p>
+<p>Notice that the minimum average income is 677.8, which seems to be
+much lower than then mean average income, even 10 times lower than the
+1st quantile. Since it seems quite suspisous, we need to validate
+it.</p>
+<pre class="r"><code>census_df[which.min(census_df$`Average income (excluding zeros)`), ]</code></pre>
+<p>This data is from Prince Edward Island in 2004, and the income source
+is “other government transfers”. Upon research, Government transfers
+refers to assistance from provincial and municipal programs, Workers’
+Compensation benefits, the GST/HST Credit and provincial refundable tax
+credits such as the Quebec and Newfoundland and Labrador sales tax
+credits. However, since many of the above mentioned are made to their
+own category and excluded from “other government transfers” in the data
+set, it make sense that the value is low.</p>
+</div>
 </div>
 <div id="preliminary-results" class="section level2">
 <h2>Preliminary Results</h2>

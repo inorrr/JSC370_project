@@ -9,7 +9,7 @@ link-citations: yes
 ---
 
 
-```{r setup, message=FALSE, warning=FALSE}
+```{r setup, message=FALSE, warning=FALSE, include=FALSE}
 #install.packages(c("data.table","leaflet"))
 knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
 library(data.table)
@@ -18,7 +18,6 @@ library(kableExtra)
 library(dplyr)
 library(splines)
 library(mgcv)
-
 ```
 
 ## Introduction
@@ -29,18 +28,25 @@ For this project, my question of Interest is: **"How does crime rate relate to p
 
 In order to answer this question, data on both crime and socioeconomic status are needed. However, I found no existing data set that contains all desired information, therefore this needs to be achieved through merging more than one data sets. Aftering choosing carefully, the following two separate data sets are obtained: 
 
-  1. "Income of individuals by age group, sex and income source, Canada, provinces and selected census metropolitan areas"
+  1. **"Income of individuals by age group, sex and income source, Canada, provinces and selected census metropolitan areas"**. Released 2023-05-02. This data set is annually updated and maintained by Statistics Canada (Table 11-10-0239-01). Data is collected through the Survey of Labor and Income Dynamics, Survey of Consumer Finances, and Canadian Income Survey. 
   
-  2. "Incident-based crime statistics, by detailed violations, Canada, provinces, territories, Census Metropolitan Areas and Canadian Forces Military Police"
+  2. **"Incident-based crime statistics, by detailed violations, Canada, provinces, territories, Census Metropolitan Areas and Canadian Forces Military Police"**. Released 2023-07-27. This data set is also annually updated and maintained by Statistics Canada (Table 35-10-0177-01, formerly CANSIM 252-0051). Data is collected through the Uniform Crime Reporting Survey. 
 
+Understanding the relationship between crime rates and poverty in Canada is crucial for policymakers, law enforcement agencies, and social welfare programs. Exploring this correlation can shed light on the socioeconomic factors driving criminal behavior and help formulate targeted interventions to alleviate poverty and reduce crime. Additionally, elucidating this connection can inform broader discussions on social inequality, justice, and community well-being in Canadian society.
 
 ## Methods
 
 *"Include how and where the data were acquired, how you cleaned and wrangled the data, what tools you used for data exploration."*
   
-Both are downloaded directly from **Statistics Canada**, which is considered to be an reliable source. Since they are from the same source, the data sets follows similar structure and all contains the two columns "GEO" and "REF_DATE" where the former one refers to the geographical region and the second one refers to the year of data. Thus, it's possible to combine the two data sets to obtain all information needed.
+Both data sets are downloaded directly from **Statistics Canada**, which is usually considered to be an reliable source. Because they share the same source, the data sets follows similar structure and all contains the two columns `GEO` and `REF_DATE` where the former one refers to the geographical region and the second one refers to the year of data. Thus, it's possible to combine the two data sets to obtain all information needed.
 
 However, it is worth mentioning that both data sets are huge and contains **unrelated information**. Therefore, cleaning and wrangling are needed for more convenient analysis and more efficient computing & uploading, as the original data sets are oversize thus cannot be pushed to github repository.
+
+Reference:
+
+1. The census data set: https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=1110023901
+2. The crime data set: https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=3510017701
+
 
 ```{r checking-file}
 fn1 <- "https://raw.githubusercontent.com/inorrr/JSC370_project/main/census.csv"
@@ -54,6 +60,8 @@ if (!file.exists("crime.csv"))
   download.file(fn2, destfile = "crime.csv")
 crime_df <- data.table::fread("crime.csv")
 ```
+
+### Data Wrangling and Cleaning
 
 1. First I dropped the unrelated columns in both columns, keeping only information revelant to the question of interest.
 
@@ -150,12 +158,82 @@ write.csv(crime_df, "/Users/yinuozhao/Desktop/UofT/JSC370/JSC370-2024-main/JSC37
 write.csv(census_df, "/Users/yinuozhao/Desktop/UofT/JSC370/JSC370-2024-main/JSC370_project/census.csv")
 ```
 
-6. Notice that right now both datasets are in long format, I converted them to wide for convenience. 
+At this point both the crime data frame and census data frame has `REF_DATE` and `GEO` in common, and they each have another **categorical variable**, which is `Income source` for census data and `Violation`(it means crime type) for crime data. While it may seem to make sense to join the two data sets using REF_DATE and GEO directly, the results would involves the data for all combinations of Income source and Violation for each REF_DATE and GEO. This will be a huge data set and thus slow down the computation. Therefore, I choose to **keep the data sets separate** and **join them when necessary** (i.e. after picking out certain categories of interest).
 
+
+### Exploratory Data Analysis
+
+
+Notice that right now both data sets are in long format, I converted them to wide for convenience. 
+
+```{r }
+crime_df <- pivot_wider(crime_df, id_cols = c(REF_DATE, GEO, Violations), 
+                        names_from = Statistics, values_from = VALUE)
+crime_df <- na.omit(crime_df)
+
+census_df <- pivot_wider(census_df, id_cols = c(REF_DATE, GEO, `Income source`), 
+                         names_from = Statistics, values_from = VALUE)
+census_df <- na.omit(census_df)
+
+```
+
+*Check the dimensions and headers and footers of the data*
+```{r eval=FALSE}
+dim(census_df)
+dim(crime_df)
+head(crime_df)
+tail(crime_df)
+head(census_df)
+tail(census_df)
+```
+The census data set has 8 variables with 3613 observations, the crime dataset has 6 variables with 9271 observations. By looking at the headers and footers of both data sets, they seems to be imported correctly and contains no missing values (in the displayed rows).  
+
+*Check the variable types in the data*
+```{r eval = FALSE}
+str(census_df)
+str(crime_df)
+summary(census_df)
+summary(crime_df)
+```
+In both data frames, we see that the variable types are a mix of integer, numeric and characters. All variable types correctly align with the context of the variables. No major problems arises with the data at this stage (i.e. a variable with all missing values.)
+
+
+*Take a closer look at some/all of the variables*
+
+For both data frame, we need `REF_DATE` and `GEO` to correctly identify a province in Canada with a valid year. For census data frame, we need to look at the values of the different types of income (median, aggregate, etc). For the crime data frame, we need to look at the recorded crime rate and actual number of incidents to be within the reasonable range.
+
+```{r eval = FALSE}
+table(census_df$REF_DATE)
+table(census_df$GEO)
+table(crime_df$REF_DATE)
+table(crime_df$GEO)
+summary(census_df$`Aggregate income`)
+summary(census_df$`Average income (excluding zeros)`)
+summary(census_df$`Median income (excluding zeros)`)
+summary(crime_df$`Actual incidents`)
+summary(crime_df$`Rate per 100,000 population`)
+```
+
+Both data sets contains data from 1998 to 2021, on the 10 provinces in Canada as desired because I cleaned the data sets this way. Other variables being checked are within the reasonable range. The aggregate income, average income and median income are all measured in 2021 constant dollars, aggregate income record numbers in millions. The crime rates are measured as number of incidents per 100,000 population.
+
+
+*Validate with an external source*
+
+Notice that the minimum average income is 677.8, which seems to be much lower than then mean average income, even 10 times lower than the 1st quantile. Since it seems quite suspisous, we need to validate it.
+
+```{r eval=FALSE}
+census_df[which.min(census_df$`Average income (excluding zeros)`), ]
+```
+
+This data is from Prince Edward Island in 2004, and the income source is "other government transfers". Upon research, Government transfers refers to assistance from provincial and municipal programs, Workers’ Compensation benefits, the GST/HST Credit and provincial refundable tax credits such as the Quebec and Newfoundland and Labrador sales tax credits. However, since many of the above mentioned are made to their own category and excluded from "other government transfers" in the data set, it make sense that the value is low.
 
 ## Preliminary Results 
 
 Provide summary statistics in tabular from and publication-quality figures, take a look at the kable function from knitr to write nice tables in Rmarkdown
+
+```{r}
+
+```
 
 
 ## Summary
