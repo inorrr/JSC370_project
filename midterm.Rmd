@@ -20,13 +20,14 @@ library(splines)
 library(mgcv)
 library(gridExtra)
 library(cowplot)
+library(broom)
 ```
 
 ## Introduction
 
 *"Provide background on your data sets and a clear formulated question or hypothesis."*
 
-For this project, my question of Interest is: **"How does crime rate relate to poverty in Canada?"**
+For this project, my question of Interest is: **"How does crime rate relate to income in Canada?"**
 
 In order to answer this question, data on both crime and socioeconomic status are needed. However, I found no existing data set that contains all desired information, therefore this needs to be achieved through merging more than one data sets. Aftering choosing carefully, the following two separate data sets are obtained: 
 
@@ -34,7 +35,7 @@ In order to answer this question, data on both crime and socioeconomic status ar
   
   2. **"Incident-based crime statistics, by detailed violations, Canada, provinces, territories, Census Metropolitan Areas and Canadian Forces Military Police"**. Released 2023-07-27. This data set is also annually updated and maintained by Statistics Canada (Table 35-10-0177-01, formerly CANSIM 252-0051). Data is collected through the Uniform Crime Reporting Survey. 
 
-Understanding the relationship between crime rates and poverty in Canada is crucial for policymakers, law enforcement agencies, and social welfare programs. Exploring this correlation can shed light on the socioeconomic factors driving criminal behavior and help formulate targeted interventions to alleviate poverty and reduce crime. Additionally, elucidating this connection can inform broader discussions on social inequality, justice, and community well-being in Canadian society.
+Understanding the relationship between crime rates and income in Canada is crucial for policymakers, law enforcement agencies, and social welfare programs. Exploring this correlation can shed light on the socioeconomic factors driving criminal behavior and help formulate targeted interventions to alleviate poverty and reduce crime. Additionally, elucidating this connection can inform broader discussions on social inequality, justice, and community well-being in Canadian society.
 
 ## Methods
 
@@ -73,9 +74,9 @@ census_df <- census_df[, c("REF_DATE", "GEO", "Age group", "Sex", "Income source
 ```
 
 2. I noticed that in the GEO column:
-  + both data sets uses a mix of province & city names. I removed all observations with city names and keep only those province data so that the data set is smaller(since the province data contains cities already) and avoids redundancy. 
-  + Notice that the census data only have data from the 10 provinces, not the 3 territories, I filtered out those data from the crime data set as there are no matching data. 
-  + Notice that there is a square bracket with a number behind each province name in the crime data, therefore I removed it with regular expression so that we can join the two data sets on province later.
+  + both data sets uses a **mix of province & city names**. I removed all observations with city names and keep only those province data so that the data set is smaller(since the province data contains cities already) and avoids redundancy. 
+  + Notice that the census data only have data from the 10 provinces, not the **3 territories**, I filtered out those data from the crime data set as there are no matching data. 
+  + Notice that there is a **square bracket** with a number behind each province name in the crime data, therefore I removed it with regular expression so that we can join the two data sets on province later.
 
 ```{r eval = FALSE}
 
@@ -107,7 +108,7 @@ crime_df <- crime_df %>% filter(Statistics == "Actual incidents" |
 
 
 3. In the crime data frame, 
-  + there are 314 different types of crime, which does much more detailed categorization than I'm interested in. Therefore, to avoid having too much computation to merge data later on, I choose too keep only the bigger categories (i.e. total robbery, total assaults, etc). 
+  + there are **314 different types of crime**, which does much more detailed categorization than I'm interested in. Therefore, to avoid having too much computation to merge data later on, I choose too keep only the bigger categories (i.e. total robbery, total assaults, etc). 
   + There are also square brackets at the end so I removed them.
   
 ```{r eval = FALSE}
@@ -126,9 +127,9 @@ crime_df$Violations <- gsub("\\s*\\[\\d+\\]$", "", crime_df$Violations)
 
 3. In the census data frame: 
 
-  + the column Age group specifies the age however since we do not have this information in the crime df, we need to combine all age groups. This can be done by taking the average of the categories.
+  + the column `Age group` specifies the age however since we do not have this information in the crime data frame, we need to combine all age groups. This can be done by taking the average of the categories.
   
-  + Same for sex, same method is used.
+  + Same for `Sex`, same method is used.
 
 ```{r eval = FALSE}
 table(census_df$"Age group")
@@ -188,7 +189,7 @@ tail(crime_df)
 head(census_df)
 tail(census_df)
 ```
-The census data set has 8 variables with 3613 observations, the crime dataset has 6 variables with 9271 observations. By looking at the headers and footers of both data sets, they seems to be imported correctly and contains no missing values (in the displayed rows).  
+The census data set has **8 variables** with **3613 observations**, the crime data set has **6 variables** with **9271 observations**. By looking at the headers and footers of both data sets, they seems to be imported correctly and contains no missing values (in the displayed rows).  
 
 *Check the variable types in the data*
 ```{r eval = FALSE}
@@ -221,19 +222,21 @@ Both data sets contains data from 1998 to 2021, on the 10 provinces in Canada as
 
 *Validate with an external source*
 
-Notice that the minimum average income is 677.8, which seems to be much lower than then mean average income, even 10 times lower than the 1st quantile. Since it seems quite suspisous, we need to validate it.
+Notice that the minimum average income is **677.8**, which seems to be much lower than then mean average income, even 10 times lower than the 1st quantile. Since it seems quite suspicious, we need to validate it.
 
 ```{r eval=FALSE}
 census_df[which.min(census_df$`Average income (excluding zeros)`), ]
 ```
 
-This data is from Prince Edward Island in 2004, and the income source is "other government transfers". Upon research, Government transfers refers to assistance from provincial and municipal programs, Workers’ Compensation benefits, the GST/HST Credit and provincial refundable tax credits such as the Quebec and Newfoundland and Labrador sales tax credits. However, since many of the above mentioned are made to their own category and excluded from "other government transfers" in the data set, it make sense that the value is low.
+This data is from **Prince Edward Island** in 2004, and the income source is **"other government transfers"**. Upon research, Government transfers refers to assistance from provincial and municipal programs, Workers’ Compensation benefits, the GST/HST Credit and provincial refundable tax credits such as the Quebec and Newfoundland and Labrador sales tax credits. However, since many of the above mentioned are made to their own category and excluded from "other government transfers" in the data set, it make sense that the value is low.
 
 ## Preliminary Results 
 
-*Provide summary statistics in tabular from and publication-quality figures, take a look at the kable function from knitr to write nice tables in Rmarkdown*
+*"Provide summary statistics in tabular from and publication-quality figures, take a look at the kable function from knitr to write nice tables in Rmarkdown."*
 
-1. Firstly, I examined the trend in crime rate across provinces and crime types.
+### Looking at Crime Data
+
+Firstly, I examined the trend in crime rate across provinces and crime types.
 
 ```{r, fig.align='center', fig.width=10, fig.height=5}
 filtered_data = crime_df %>% filter(Violations=="Total, all violations")
@@ -252,8 +255,7 @@ ggplot(filtered_data, aes(x = REF_DATE, y = `Rate per 100,000 population`, color
   theme(legend.title = element_text(face = "bold"))
 
 ```
-The plot depicts the **total crime rate**, encompassing all types of crimes, from 1998 to 2021, with each province represented by a distinct color. The crime rate is measured per 100,000 population. Notably, Saskatchewan consistently exhibits a significantly higher crime rate compared to other provinces throughout the period of 1998 to 2021. Conversely, Quebec and Ontario consistently demonstrate the lowest crime rates. Across all provinces, there is a discernible decreasing trend in crime rates over the years, with many provinces experiencing peak crime rates in 2003-2004.
-
+The plot depicts the **total crime rate**, encompassing all types of crimes, from 1998 to 2021, with each province represented by a distinct color. The crime rate is measured per 100,000 population. Notably, Saskatchewan consistently exhibits a significantly higher crime rate compared to other provinces throughout the period of 1998 to 2021. Conversely, Quebec and Ontario consistently demonstrate the lowest crime rates. Across all provinces, there is a discernible **decreasing trend** in crime rates over the years, with many provinces experiencing peak crime rates in 2003-2004.
 
 In addition to analyzing total crime, I delved into specific crime categories often associated with poverty: **break and enter**, **robbery**, and **prostitution**. The three accompanying plots illustrate their respective rates over the years. Overall, there is a decreasing trend in the rates of all three crimes, with occasional exceptions such as robbery rates in Manitoba. Notably, British Columbia stands out with a significantly high rate of prostitution in 2004, doubling the number reported in Saskatchewan, which held the second-highest rate that year.
 
@@ -307,7 +309,8 @@ plot3 <- ggplot(filtered_data, aes(x = REF_DATE, y = `Rate per 100,000 populatio
 grid.arrange(plot1, plot2, plot3, nrow = 1)
 ```
 
-Below is a table summarizing the average crime rate of all crime types (`Total, all violations` is excluded) by province and year. The cells are colored by value, where lighter color means higher value and darker color means smaller value. Scrolling down the table, we can see that for all provinces, the average crime rate has a decreasing trend as the colors are getting dark in each column. This agree with what I found and infered from the previous plots.
+Presented below is a table summarizing the average crime rate across all crime types (excluding `Total, all violations`) categorized by province and year. The cells are color-coded by value, with lighter shades indicating higher values and darker shades representing smaller values. Upon scrolling through the table, it becomes evident that across all provinces, there is a discernible **decreasing trend in the average crime rate**, as evidenced by the darkening shades in each column. This observation aligns with the findings and inferences drawn from the preceding plots.
+
 
 ```{r, echo = FALSE, fig.align='center'}
 summary_stats <- crime_df %>% filter(Violations != "Total, all violations") %>% 
@@ -333,10 +336,11 @@ summary_table <- summary_stats %>%
   column_spec(11, color = "white", background = spec_color(summary_stats$Saskatchewan))
 summary_table
 ```
+### Looking at Income Data
 
+Given the general decrease in crime rates, I am interested in exploring the **trend of income** to ascertain the potential existence of an association. 
 
-
-Given the general decrease in crime rates, I am interested in exploring the trend of income to ascertain the potential existence of an association.
+The following plot illustrates the average total income of each province over time. It is evident that, on the whole, the average total income for all provinces exhibits a steady **upward trend**. Notably, since 2003, Alberta has surpassed Ontario to become the province with the highest average total income. Additionally, it is noteworthy to observe a slight decrease in income across all provinces around 2019, likely attributed to the impact of the COVID-19 pandemic.
 
 ```{r, echo=FALSE, fig.align='center', fig.width=10, fig.height=5}
 filtered_data = census_df %>% filter(`Income source`=="Total income")
@@ -354,6 +358,24 @@ ggplot(filtered_data, aes(x = REF_DATE, y = `Average income (excluding zeros)`, 
   theme(axis.text = element_text(size = 7)) +
   theme(legend.title = element_text(face = "bold"))
 ```
+
+The box plot below also shows the average total income for different years, but this time combining data from all provinces. The pink dots represent the actual values for each year in each province. It's clear from the boxes that the average income is **increasing** year by year. Notably, between 2010 and 2016, there are some outliers with very high incomes, which corresponds to Alberta when compared with the previous plot.
+
+```{r, echo=FALSE, fig.align='center', fig.width=10, fig.height=5}
+filtered_data = census_df %>% filter(`Income source`=="Total income")
+ggplot(filtered_data, mapping = aes(x = as.factor(REF_DATE), y = `Average income (excluding zeros)`)) +
+  geom_boxplot() +
+  geom_jitter(alpha = 0.8, color = "pink") + 
+  labs(x = "Year", y = "Total income", title = "Average Total Income (excluding zeros) by Province") +
+  theme_linedraw() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  theme(plot.title = element_text(face = "bold")) +
+  theme(plot.margin = margin(0.5, 0.5, 0.5, 0.5, "cm")) +
+  theme(axis.text = element_text(size = 7))
+```
+
+After examining total income, I delved into specific income sources: employment income, investment income, and market income, which are major income categories. The plots below illustrate that all three types of income are increasing. However, employment and market income show a more steady growth pattern, while investment income fluctuates dramatically from year to year. *(Same as before, the same legend is omitted for display purpose since I'm only interested in the overall trend, not how provinces compare to each other.)*
+
 ```{r, echo = FALSE, fig.align='center', fig.width=15, fig.height=5}
 filtered_data = census_df %>% filter(`Income source`=="Employment income")
 plot1 <- ggplot(filtered_data, aes(x = REF_DATE, y = `Average income (excluding zeros)`, color = GEO)) +
@@ -399,6 +421,7 @@ plot3 <- ggplot(filtered_data, aes(x = REF_DATE, y = `Average income (excluding 
 
 grid.arrange(plot1, plot2, plot3, nrow = 1)
 ```
+The table below provides a summary of the average total income of all provinces from 1998 to 2021. The color scale used is consistent with that of the crime data frame, where lighter shades denote higher values. Over time, there is a discernible increase in income, as evidenced by the progressive lightening of colors.
 
 ```{r, echo = FALSE, fig.align='center'}
 summary_stats <- census_df %>% filter(`Income source` == "Total income") %>% 
@@ -428,8 +451,11 @@ summary_table <- summary_stats %>%
 summary_table
 ```
 
+### Examining Crime and Income together
 
-```{r, echo = FALSE, fig.align='center', fig.width=12, fig.height=6}
+After separately exploring the two data sets, there appears to be a potential relationship between crime rate and income. However, further experimentation using both data sets together is necessary to confirm and understand this relationship more comprehensively.
+
+```{r, echo = TRUE, fig.align='center', fig.width=10, fig.height=5}
 filtered_census <- census_df %>% filter(`Income source` == "Total income") 
 filtered_crime <- crime_df %>%filter(Violations=="Total, all violations")
 
@@ -447,13 +473,15 @@ ggplot(data = joint_df, aes(x = `Average income (excluding zeros)`, y = `Rate pe
   theme(legend.title = element_text(face = "bold")) +
   theme(plot.margin = margin(0.5, 0.5, 0.5, 0.5, "cm"))
 ```
-```{r}
+The scatter plot presented demonstrates the relationship between average total income and total crime rate (ignoring crime type). Although the overall distribution of points may not reveal a strong relationship, upon coloring the points by province, a distinct pattern emerges. It becomes evident that average total income and total crime rate are **negatively correlated** across all provinces, with possibly the exception of Newfoundland and Labrador where the relationship appears to be less pronounced, indicated by a line that is nearly horizontal. To draw a confident conclusion, it is imperative to examine the actual correlation value between these variables.
+
+
+```{r, echo = FALSE}
 summary_stats <- joint_df %>% 
   group_by(GEO) %>% 
   summarise(Correlation = cor(`Average income (excluding zeros)`, `Rate per 100,000 population`))
 
 summary_stats <- summary_stats %>% rename(Province = GEO)
-
 summary_table <- summary_stats %>%
   kable("html") %>%
   kable_styling(bootstrap_options = "striped", full_width = FALSE) %>%
@@ -461,6 +489,7 @@ summary_table <- summary_stats %>%
   kable_styling(fixed_thead = T)
 summary_table
 ```
+From here, we can see that all correlation values are less than zero, which includes Newfoundland and Labrador which has a very week but negative correlation. Quebec exhibits the strongest correlation between average total income and total crime rate as the correlation is close to -1. 
 
 ```{r, echo = FALSE, fig.align='center', fig.width=12, fig.height=6}
 filtered_census <- census_df %>% filter(`Income source` == "Employment income") 
@@ -474,7 +503,7 @@ plot1 <- ggplot(data = joint_df, aes(x = `Average income (excluding zeros)`, y =
   guides(size = FALSE) + # remove "size" from legend
   labs(x = "Average Employment Income (excluding zeros)", 
        y = "Robbery Crime Rate per 100,000 population`", 
-       title = "Average Employment Income vs Robbery Crime Rate") +
+       title = "Avg Employment Income vs Robbery Crime Rate") +
   theme_linedraw() + 
   scale_color_discrete(name = "Provinces") +
   theme(axis.text = element_text(size = 7)) +
@@ -482,9 +511,7 @@ plot1 <- ggplot(data = joint_df, aes(x = `Average income (excluding zeros)`, y =
   theme(legend.position = "none") +
   theme(legend.title = element_text(face = "bold")) +
   theme(plot.margin = margin(0.5, 0.5, 0.5, 0.5, "cm"))
-```
 
-```{r, echo = FALSE, fig.align='center', fig.width=12, fig.height=6}
 filtered_census <- census_df %>% filter(`Income source` == "Market income") 
 filtered_crime <- crime_df %>%filter(Violations=="Total property crime violations")
 
@@ -496,7 +523,7 @@ plot2 <- ggplot(data = joint_df, aes(x = `Average income (excluding zeros)`, y =
   guides(size = FALSE) + # remove "size" from legend
   labs(x = "Average Market Income (excluding zeros)", 
        y = "Property Crime Rate per 100,000 population`", 
-       title = "Average Market Income vs Property Crime Rate") +
+       title = "Avg Market Income vs Property Crime Rate") +
   theme_linedraw() + 
   scale_color_discrete(name = "Provinces") +
   theme(axis.text = element_text(size = 7)) +
@@ -504,9 +531,7 @@ plot2 <- ggplot(data = joint_df, aes(x = `Average income (excluding zeros)`, y =
   theme(legend.position = "none") +
   theme(legend.title = element_text(face = "bold")) +
   theme(plot.margin = margin(0.5, 0.5, 0.5, 0.5, "cm"))
-```
 
-```{r, echo = FALSE, fig.align='center', fig.width=12, fig.height=6}
 filtered_census <- census_df %>% filter(`Income source` == "Government transfers") 
 filtered_crime <- crime_df %>%filter(Violations=="Total prostitution")
 
@@ -518,7 +543,7 @@ plot3 <- ggplot(data = joint_df, aes(x = `Average income (excluding zeros)`, y =
   guides(size = FALSE) + # remove "size" from legend
   labs(x = "Average Employment Income (excluding zeros)", 
        y = "Prostitution Crime Rate per 100,000 population`", 
-       title = "Average Employment Income vs Prostitution Crime Rate") +
+       title = "Avg Employment Income vs Prostitution Crime Rate") +
   theme_linedraw() + 
   scale_color_discrete(name = "Provinces") +
   theme(axis.text = element_text(size = 7)) +
@@ -531,16 +556,22 @@ plot3 <- ggplot(data = joint_df, aes(x = `Average income (excluding zeros)`, y =
 ```{r, echo = FALSE, fig.align='center', fig.width=15, fig.height=5}
 grid.arrange(plot1, plot2, plot3, nrow = 1)
 ```
+The three smaller plots investigate the relationship between a specific income source and a particular type of violation, as indicated by the legend. In the first plot, which examines the relationship between **robbery crime rate and employment income**, all provinces display a negative trend except for Newfoundland and Labrador. Manitoba demonstrates a weak relationship, as evidenced by the considerable dispersion of points around the line.
 
-Pick a province to look closer
+Moving to the second plot, which contrasts **market income with property crime rate**, a strong and negative relationship is apparent. The third plot, depicting **employment income versus prostitution crime rate**, reveals varying degrees of association across provinces, with many showing a weak relationship. Notably, Ontario exhibits a positive relationship between employment income and prostitution crime rate.
+
+### Pick a Province to Look Closer
+
+Since **Ontario** demonstrates a different relationship to other provinces in the previous plot, I choose it to take a closer look. The bar plot below shows the composition of crime incidents each year in Ontario. We see that the major categories are **property crime** and **weapon violations**.
 
 ```{r, echo = FALSE, fig.align='center', fig.width=15, fig.height=8}
 filtered_census <- census_df %>% filter(GEO == "Ontario")
-filtered_crime <- crime_df %>%filter(GEO == "Ontario")  %>% filter(Violations != "Total, all violations")
+filtered_crime <- crime_df %>%filter(GEO == "Ontario")
 
 joint_df <- inner_join(filtered_crime, filtered_census, by = c("REF_DATE", "GEO"))
 
-ggplot(data = filtered_crime, aes(x = REF_DATE, fill = Violations, y = `Actual incidents`)) +
+plot_data <- filtered_crime %>% filter(Violations != "Total, all violations" & Violations != "Total, all Criminal Code violations (excluding traffic)" & Violations != "Total, all Criminal Code violations (including traffic)")
+ggplot(data = plot_data, aes(x = REF_DATE, fill = Violations, y = `Actual incidents`)) +
   geom_bar(stat = "identity", position = "stack", color = "black", width = 0.5) + 
   labs(title = "Incidents of Crime Cases by Type in Ontario", x = "Year", y = "Number of Incidents") +
   theme_linedraw() + 
@@ -551,17 +582,149 @@ ggplot(data = filtered_crime, aes(x = REF_DATE, fill = Violations, y = `Actual i
 ```
 
 ```{r, echo = FALSE, fig.align='right', fig.width=15, fig.height=4}
-ggplot(data = filtered_crime, aes(x = REF_DATE, fill = Violations, y = `Actual incidents`)) +
+ggplot(data = plot_data, aes(x = REF_DATE, fill = Violations, y = `Actual incidents`)) +
   geom_bar(stat = "identity", position = "stack", color = "white", width = 0.01) + 
   theme_void() + 
   theme(legend.position = "left") +
   theme(legend.margin = margin(10, 10, 10, 50))
 ```
 
+```{r, echo = FALSE, fig.align='center'}
+summary_stats <- joint_df %>% filter(`Income source` != "COVID-19 benefits") %>% 
+  group_by(`Income source`, `Violations`) %>% 
+  summarise(Correlation = cor(`Aggregate income`, `Actual incidents`))
 
+max_row <- summary_stats[which.max(abs(summary_stats$Correlation)), ]
+second_max_row <- summary_stats[order(abs(summary_stats$Correlation), decreasing = TRUE)[-1][1], ]
 
- 
+summary_stats <- summary_stats %>% pivot_wider(names_from = `Income source`, values_from = Correlation) 
+
+summary_table <- summary_stats %>%
+  kable("html") %>%
+  kable_styling(bootstrap_options = "striped", full_width = TRUE) %>%
+  add_header_above(c("Table of Average Total Income" = 16)) %>% 
+  scroll_box(width = "100%", height = "500px") %>% 
+  scroll_box(width = "100%", height = "500px") %>% 
+  kable_styling(fixed_thead = T)
+summary_table
+```
+
+The table provides a summary of the **correlation** between **all types of violations and income sources in Ontario**. Notably, COVID-19 benefits are excluded from the analysis due to their availability only during the pandemic years, which limits the dataset. The strongest correlation is observed between **self-employment income and production under the Cannabis Act**. However, it's important to note that this relationship may not be entirely reliable due to the limited data available (3 observations), as illustrated in the plot below.
+
+```{r, echo = FALSE, fig.align='center', fig.width=9, fig.height=5}
+joint_df %>% 
+  filter(`Income source` == "Self-employment income" & `Violations` == "Total production - Cannabis Act") %>% 
+  ggplot(aes(x=`Average income (excluding zeros)`, y=`Actual incidents`)) + 
+  geom_line() + 
+  geom_point(alpha = 0.5) + 
+  geom_text(aes(label = REF_DATE), vjust = 1.5) +
+  labs(title = "Self-employment income vs Total production - Cannabis Act", x = "Average Self-Employment income (excluding zeros)", y = "Number of Incidents of Production - Cannabis Act") +
+  theme_linedraw() +
+  theme(plot.title = element_text(face = "bold")) +
+  theme(plot.margin = margin(0.5, 0.5, 0.5, 0.5, "cm"))
+```
+
+The second strongest correlation, with a coefficient of 0.98, is observed between **total income and incidents of possession of other Controlled Drugs and Substances Act drugs**. With additional data available, this relationship appears more promising. Upon examination, it becomes evident that as income levels increase, the number of incidents of possession of these drugs also tends to rise. Despite the negative correlation between total income and total crime rate in Ontario, as found in previous analyses, a positive relationship exists between total income and incidents of possession of other Controlled Drugs and Substances Act drugs.
+
+```{r, echo = FALSE, fig.align='center', fig.width=9, fig.height=5}
+joint_df %>% 
+  filter(`Income source` == "Total income" & `Violations` == "Total, possession, other Controlled Drugs and Substances Act drugs") %>% 
+  ggplot(aes(x=`Average income (excluding zeros)`, y=`Actual incidents`)) + 
+  geom_line() + 
+  geom_point(alpha = 0.5) + 
+  geom_text(aes(label = REF_DATE), vjust = 1.5) +
+  labs(title = "Total Income vs Total, possession, other Controlled Drugs and Substances Act drugs", x = "Average Total income (excluding zeros)", y = "Number of Incidents") +
+  theme_linedraw() +
+  theme(plot.title = element_text(face = "bold")) +
+  theme(plot.margin = margin(0.5, 0.5, 0.5, 0.5, "cm"))
+```
+
+### Group by Income Level
+
+I created 4 levels for average total income using the quarantines, from negative infinity to the first quantile is **"Low"**, from first quantile to mean is **"Med_Low"**, from mean to 3rd quantile is **"Med_High"**, from 3rd quantile above is **"High"**. 
+
+```{r}
+filter_census <- census_df %>% filter(`Income source` == "Total income")
+# summary(filter_census$`Average income (excluding zeros)`)
+breaks <- c(-Inf, 40460, 45077, 48859, Inf)
+filter_census$income_level <- cut(filter_census$`Average income (excluding zeros)`, 
+                                  breaks = breaks, labels = c("Low", "Med-Low", "Med-High", "High"))
+```
+
+From the box plot presented below, it appears that the total crime rate **does not exhibit a clear trend of decreasing with higher levels of total income**. This finding contradicts previous observations when examining the relationship between total crime rate and average total income **by province**. Therefore, it is conceivable that while a relationship exists, it may be influenced by other factors related to the demographics of each province. Consequently, when considering all observations collectively, the relationship becomes less apparent.
+
+```{r, echo = FALSE, fig.align='center', fig.width=10, fig.height=5}
+filter_crime <- crime_df %>%filter(Violations=="Total, all violations")
+joint_df <- inner_join(filter_census, filter_crime, by = c("REF_DATE", "GEO"))
+
+ggplot(joint_df, aes(x = as.factor(income_level), y = `Rate per 100,000 population`)) +
+  geom_boxplot() +
+  geom_jitter(alpha = 0.8, color = "tomato") + 
+  labs(x = "Income Level", y = "Total Crime Rate", title = "Total Crime Rate by Income Level") +
+  theme_linedraw() +
+  theme(plot.title = element_text(face = "bold")) +
+  theme(plot.margin = margin(0.5, 0.5, 0.5, 0.5, "cm")) +
+  theme(axis.text = element_text(size = 10))
+```
+
+### Fitting Statistical Models
+
+Since we've previously observed in plots such that the **slope** of the relationship between average total income and total crime rate is different across provinces, we need to fit a model with **interaction terms** such that the slopes can be different.
+
+```{r, echo = TRUE, fig.align='center', fig.width=10, fig.height=5}
+library(broom)
+model <- lm(data = joint_df, `Rate per 100,000 population` ~ `Average income (excluding zeros)` * `GEO`)
+tidy_coeffs <- tidy(model)
+table <- tidy_coeffs %>%
+  kable("html") %>%
+  kable_styling(bootstrap_options = "striped", full_width = TRUE)
+table
+```
+
+The linear regression model examines the relationship between **Crime Rate per 100,000 population** and **Average income (excluding zeros)** while considering the categorical variable `GEO` representing different **provinces**. The model reveals several significant findings: firstly, a **negative relationship** exists between average total income and total crime rate, suggesting that higher average income tends to be associated with lower crime rates. Secondly, various provinces exhibit differing baseline rates, with **British Columbia** notably displaying a significantly higher rate compared to the reference province. Additionally, interaction terms between income and provinces indicate varying effects across regions, such as a stronger negative association between income and crime rate in British Columbia. Overall, the model, with an adjusted **R-squared value of 0.9328**, indicates a robust fit, suggesting that both income and province significantly influence the rate per 100,000 population, with nuanced variations across different regions.
+
 
 ## Summary
 
-What you found so far from your data in terms of the formulated question.
+*What you found so far from your data in terms of the formulated question.*
+
+Recall that the question of interest is: **“How does crime rate relate to poverty in Canada?”**
+
+1. **Looking at Crime Data:**
+  + Saskatchewan consistently exhibits a significantly higher total crime rate compared to other provinces throughout the period of 1998 to 2021.
+  + Quebec and Ontario consistently demonstrate the lowest total crime rates.
+  + Across all provinces, there is a discernible decreasing trend in total crime rates over the years.
+  + Many provinces experiencing peak total crime rates in 2003-2004.
+  + There is a decreasing trend in the rates of break and enter, robbery, and prostitution in all provinces.
+  + British Columbia stands out with a significantly high rate of prostitution in 2004, doubling the number reported in Saskatchewan, which held the second-highest rate that year.
+  + Across all provinces, there is a discernible decreasing trend in the average crime rate of all types, from year to year.
+  
+2. **Looking at Income Data:**
+  + On the whole, the average total income for all provinces exhibits a steady upward trend.
+  + Since 2003, Alberta has surpassed Ontario to become the province with the highest average total income.
+  + There is a slight decrease in average total income across all provinces around 2019, likely attributed to the impact of the COVID-19 pandemic.
+  + Employment income, investment income, and market income of provinces are all increasing. 
+  + Employment and market income show a more steady growth pattern, while investment income fluctuates dramatically from year to year.
+  
+3. **Examining Crime and Income Together:**
+  + Average total income and total crime rate are negatively correlated across all provinces.
+  + Quebec exhibits the strongest correlation between average total income and total crime rate as the correlation is close to -1.
+  + In the relationship between robbery crime rate and employment income, all provinces display a negative trend except for Newfoundland and Labrador. Manitoba demonstrates a weak relationship, as evidenced by the considerable dispersion of points around the line.
+  + Property crime rate decreases with increasing market income in all provinces.
+  + Employment income and prostitution crime rate have varying degrees of association across provinces, with many showing a weak relationship. Notably, Ontario exhibits a positive relationship between employment income and prostitution crime rate while it is negative for other provinces.
+  
+4. **Zoom on Province - Ontario:**
+  + Major crimes in Ontario are property crime and weapon violations.
+  + Strongest correlation is observed between self-employment income and production under the Cannabis Act. However, it’s important to note that this relationship may not be entirely reliable due to the limited data available.
+  + The second strongest correlation, with a coefficient of 0.98, is observed between total income and incidents of possession of other Controlled Drugs and Substances Act drugs. As income levels increase, the number of incidents of possession of these drugs also tends to rise.
+  
+5. **Group by Income Level**
+  + Created 4 levels for average total income using the quarantines, from negative infinity to the first quantile is “Low”, from first quantile to mean is “Med_Low”, from mean to 3rd quantile is “Med_High”, from 3rd quantile above is “High”.
+  + Total crime rate does not exhibit a clear trend of decreasing with higher levels of total income, which contradicts previous observations when examining the relationship between total crime rate and average total income by province.  while a relationship exists, it may be influenced by other factors related to the demographics of each province. Consequently, when considering all observations collectively, the relationship becomes less apparent.
+
+6. **Fitting Statistical Models**
+  + The linear regression model analyzed the relationship between Crime Rate per 100,000 population and Average income (excluding zeros) across different provinces represented by the categorical variable GEO.
+  + Findings suggest a negative correlation between average income and total crime rate, implying that higher average income tends to coincide with lower crime rates.
+  + Provinces exhibit varying baseline rates, with British Columbia notably showing a significantly higher rate compared to the reference province.
+  + Interaction terms between income and provinces reveal differing effects across regions, such as a more pronounced negative association between income and crime rate in British Columbia.
+  + The model demonstrates a robust fit with an adjusted R-squared value of 0.9328, indicating significant influences of both income and province on the crime rate per 100,000 population, with nuanced variations across different regions.
