@@ -686,7 +686,7 @@ The linear regression model examines the relationship between **Crime Rate per 1
 
 ## Summary
 
-*What you found so far from your data in terms of the formulated question.*
+*"What you found so far from your data in terms of the formulated question."*
 
 Recall that the question of interest is: **“How does crime rate relate to income in Canada?”**
 
