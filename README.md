@@ -2,7 +2,7 @@
 
 This repository is created for the midterm project of JSC370H1: Data Science II at the University of Toronto under the instruction of Jenny(Junni Du) and Professor Meredith Franklin.
 
-Question of interest is: **“How does crime rate relate to poverty in Canada?”**
+Question of interest is: **“How does crime rate relate to income in Canada?”**
 
 1. **Looking at Crime Data:**
   + Saskatchewan consistently exhibits a significantly higher total crime rate compared to other provinces throughout the period of 1998 to 2021.
