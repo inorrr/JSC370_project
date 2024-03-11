@@ -2,7 +2,28 @@
 
 This repository is created for the midterm project of JSC370H1: Data Science II at the University of Toronto under the instruction of Jenny(Junni Du) and Professor Meredith Franklin.
 
-Question of interest is: **“How does crime rate relate to income in Canada?”**
+## Introduction
+
+For this project, my question of Interest is: **"How does crime rate relate to income in Canada?"**
+
+In order to answer this question, data on both crime and socioeconomic status are needed. However, I found no existing data set that contains all desired information, therefore this needs to be achieved through merging more than one data sets. Aftering choosing carefully, the following two separate data sets are obtained: 
+
+  1. **"Income of individuals by age group, sex and income source, Canada, provinces and selected census metropolitan areas"**. Released 2023-05-02. This data set is annually updated and maintained by Statistics Canada (Table 11-10-0239-01). Data is collected through the Survey of Labor and Income Dynamics, Survey of Consumer Finances, and Canadian Income Survey. 
+  
+  2. **"Incident-based crime statistics, by detailed violations, Canada, provinces, territories, Census Metropolitan Areas and Canadian Forces Military Police"**. Released 2023-07-27. This data set is also annually updated and maintained by Statistics Canada (Table 35-10-0177-01, formerly CANSIM 252-0051). Data is collected through the Uniform Crime Reporting Survey. 
+
+Understanding the relationship between crime rates and income in Canada is crucial for policymakers, law enforcement agencies, and social welfare programs. Exploring this correlation can shed light on the socioeconomic factors driving criminal behavior and help formulate targeted interventions to alleviate poverty and reduce crime. Additionally, elucidating this connection can inform broader discussions on social inequality, justice, and community well-being in Canadian society.
+  
+Both data sets are downloaded directly from **Statistics Canada**, which is usually considered to be an reliable source. Because they share the same source, the data sets follows similar structure and all contains the two columns `GEO` and `REF_DATE` where the former one refers to the geographical region and the second one refers to the year of data. Thus, it's possible to combine the two data sets to obtain all information needed.
+
+However, it is worth mentioning that both data sets are huge and contains **unrelated information**. Therefore, cleaning and wrangling are needed for more convenient analysis and more efficient computing & uploading, as the original data sets are oversize thus cannot be pushed to github repository.
+
+Reference:
+
+1. The census data set: https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=1110023901
+2. The crime data set: https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=3510017701
+
+## Summary of Findings 
 
 1. **Looking at Crime Data:**
   + Saskatchewan consistently exhibits a significantly higher total crime rate compared to other provinces throughout the period of 1998 to 2021.
