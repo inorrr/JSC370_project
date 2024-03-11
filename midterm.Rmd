@@ -688,7 +688,7 @@ The linear regression model examines the relationship between **Crime Rate per 1
 
 *What you found so far from your data in terms of the formulated question.*
 
-Recall that the question of interest is: **“How does crime rate relate to poverty in Canada?”**
+Recall that the question of interest is: **“How does crime rate relate to income in Canada?”**
 
 1. **Looking at Crime Data:**
   + Saskatchewan consistently exhibits a significantly higher total crime rate compared to other provinces throughout the period of 1998 to 2021.
@@ -718,11 +718,11 @@ Recall that the question of interest is: **“How does crime rate relate to pove
   + Strongest correlation is observed between self-employment income and production under the Cannabis Act. However, it’s important to note that this relationship may not be entirely reliable due to the limited data available.
   + The second strongest correlation, with a coefficient of 0.98, is observed between total income and incidents of possession of other Controlled Drugs and Substances Act drugs. As income levels increase, the number of incidents of possession of these drugs also tends to rise.
   
-5. **Group by Income Level**
+5. **Group by Income Level:**
   + Created 4 levels for average total income using the quarantines, from negative infinity to the first quantile is “Low”, from first quantile to mean is “Med_Low”, from mean to 3rd quantile is “Med_High”, from 3rd quantile above is “High”.
   + Total crime rate does not exhibit a clear trend of decreasing with higher levels of total income, which contradicts previous observations when examining the relationship between total crime rate and average total income by province.  while a relationship exists, it may be influenced by other factors related to the demographics of each province. Consequently, when considering all observations collectively, the relationship becomes less apparent.
 
-6. **Fitting Statistical Models**
+6. **Fitting Statistical Models:**
   + The linear regression model analyzed the relationship between Crime Rate per 100,000 population and Average income (excluding zeros) across different provinces represented by the categorical variable GEO.
   + Findings suggest a negative correlation between average income and total crime rate, implying that higher average income tends to coincide with lower crime rates.
   + Provinces exhibit varying baseline rates, with British Columbia notably showing a significantly higher rate compared to the reference province.
