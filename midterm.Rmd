@@ -1,5 +1,5 @@
 ---
-title: "Midterm Project"
+title: "<center>Midterm Project</center>"
 author: "Yinuo Zhao"
 date: "Mar 2, 2024"
 output:
@@ -19,6 +19,7 @@ library(dplyr)
 library(splines)
 library(mgcv)
 library(gridExtra)
+library(grid)
 library(cowplot)
 library(broom)
 ```
@@ -250,7 +251,7 @@ ggplot(filtered_data, aes(x = REF_DATE, y = `Rate per 100,000 population`, color
   theme(legend.position = "right") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) + 
   theme(plot.title = element_text(face = "bold")) + 
-  theme(plot.margin = margin(0.5, 0.5, 0.5, 0.5, "cm")) + 
+  theme(plot.margin = unit(c(0.5, 0.5, 0.5, 0.5), "cm")) + 
   theme(axis.text = element_text(size = 7)) + 
   theme(legend.title = element_text(face = "bold"))
 
@@ -272,7 +273,7 @@ plot1 <- ggplot(filtered_data, aes(x = REF_DATE, y = `Rate per 100,000 populatio
   theme(legend.position = "none") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) + 
   theme(plot.title = element_text(face = "bold")) + 
-  theme(plot.margin = margin(0.5, 0.5, 0.5, 0.5, "cm")) + 
+  theme(plot.margin = unit(c(0.5, 0.5, 0.5, 0.5), "cm")) + 
   theme(axis.text = element_text(size = 7)) + 
   theme(legend.title = element_text(face = "bold"))
 
@@ -286,7 +287,7 @@ plot2 <- ggplot(filtered_data, aes(x = REF_DATE, y = `Rate per 100,000 populatio
   theme(legend.position = "none") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) + 
   theme(plot.title = element_text(face = "bold")) + 
-  theme(plot.margin = margin(0.5, 0.5, 0.5, 0.5, "cm")) + 
+  theme(plot.margin = unit(c(0.5, 0.5, 0.5, 0.5), "cm")) + 
   theme(axis.text = element_text(size = 7)) + 
   theme(legend.title = element_text(face = "bold"))
 
@@ -300,7 +301,7 @@ plot3 <- ggplot(filtered_data, aes(x = REF_DATE, y = `Rate per 100,000 populatio
   theme(legend.position = "none") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) + 
   theme(plot.title = element_text(face = "bold")) + 
-  theme(plot.margin = margin(0.5, 0.5, 0.5, 0.5, "cm")) + 
+  theme(plot.margin = unit(c(0.5, 0.5, 0.5, 0.5), "cm")) + 
   theme(axis.text = element_text(size = 7)) + 
   theme(legend.title = element_text(face = "bold"))
 ```
@@ -354,7 +355,7 @@ ggplot(filtered_data, aes(x = REF_DATE, y = `Average income (excluding zeros)`, 
   theme(legend.position = "right") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   theme(plot.title = element_text(face = "bold")) +
-  theme(plot.margin = margin(0.5, 0.5, 0.5, 0.5, "cm")) +
+  theme(plot.margin = unit(c(0.5, 0.5, 0.5, 0.5), "cm")) + 
   theme(axis.text = element_text(size = 7)) +
   theme(legend.title = element_text(face = "bold"))
 ```
@@ -370,7 +371,7 @@ ggplot(filtered_data, mapping = aes(x = as.factor(REF_DATE), y = `Average income
   theme_linedraw() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   theme(plot.title = element_text(face = "bold")) +
-  theme(plot.margin = margin(0.5, 0.5, 0.5, 0.5, "cm")) +
+  theme(plot.margin = unit(c(0.5, 0.5, 0.5, 0.5), "cm")) + 
   theme(axis.text = element_text(size = 7))
 ```
 
@@ -387,7 +388,7 @@ plot1 <- ggplot(filtered_data, aes(x = REF_DATE, y = `Average income (excluding 
   theme(legend.position = "none") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   theme(plot.title = element_text(face = "bold")) +
-  theme(plot.margin = margin(0.5, 0.5, 0.5, 0.5, "cm")) +
+  theme(plot.margin = unit(c(0.5, 0.5, 0.5, 0.5), "cm")) + 
   theme(axis.text = element_text(size = 7)) +
   theme(legend.title = element_text(face = "bold"))
 
@@ -401,7 +402,7 @@ plot2 <- ggplot(filtered_data, aes(x = REF_DATE, y = `Average income (excluding 
   theme(legend.position = "none") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   theme(plot.title = element_text(face = "bold")) +
-  theme(plot.margin = margin(0.5, 0.5, 0.5, 0.5, "cm")) +
+  theme(plot.margin = unit(c(0.5, 0.5, 0.5, 0.5), "cm")) + 
   theme(axis.text = element_text(size = 7)) +
   theme(legend.title = element_text(face = "bold"))
 
@@ -415,7 +416,7 @@ plot3 <- ggplot(filtered_data, aes(x = REF_DATE, y = `Average income (excluding 
   theme(legend.position = "none") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   theme(plot.title = element_text(face = "bold")) +
-  theme(plot.margin = margin(0.5, 0.5, 0.5, 0.5, "cm")) +
+  theme(plot.margin = unit(c(0.5, 0.5, 0.5, 0.5), "cm")) + 
   theme(axis.text = element_text(size = 7)) +
   theme(legend.title = element_text(face = "bold"))
 
@@ -471,7 +472,7 @@ ggplot(data = joint_df, aes(x = `Average income (excluding zeros)`, y = `Rate pe
   theme(axis.text = element_text(size = 7)) +
   theme(plot.title = element_text(face = "bold")) +
   theme(legend.title = element_text(face = "bold")) +
-  theme(plot.margin = margin(0.5, 0.5, 0.5, 0.5, "cm"))
+  theme(plot.margin = unit(c(0.5, 0.5, 0.5, 0.5), "cm"))
 ```
 The scatter plot presented demonstrates the relationship between average total income and total crime rate (ignoring crime type). Although the overall distribution of points may not reveal a strong relationship, upon coloring the points by province, a distinct pattern emerges. It becomes evident that average total income and total crime rate are **negatively correlated** across all provinces, with possibly the exception of Newfoundland and Labrador where the relationship appears to be less pronounced, indicated by a line that is nearly horizontal. To draw a confident conclusion, it is imperative to examine the actual correlation value between these variables.
 
@@ -510,7 +511,7 @@ plot1 <- ggplot(data = joint_df, aes(x = `Average income (excluding zeros)`, y =
   theme(plot.title = element_text(face = "bold")) +
   theme(legend.position = "none") +
   theme(legend.title = element_text(face = "bold")) +
-  theme(plot.margin = margin(0.5, 0.5, 0.5, 0.5, "cm"))
+  theme(plot.margin = unit(c(0.5, 0.5, 0.5, 0.5), "cm"))
 
 filtered_census <- census_df %>% filter(`Income source` == "Market income") 
 filtered_crime <- crime_df %>%filter(Violations=="Total property crime violations")
@@ -530,7 +531,7 @@ plot2 <- ggplot(data = joint_df, aes(x = `Average income (excluding zeros)`, y =
   theme(plot.title = element_text(face = "bold")) +
   theme(legend.position = "none") +
   theme(legend.title = element_text(face = "bold")) +
-  theme(plot.margin = margin(0.5, 0.5, 0.5, 0.5, "cm"))
+  theme(plot.margin = unit(c(0.5, 0.5, 0.5, 0.5), "cm"))
 
 filtered_census <- census_df %>% filter(`Income source` == "Government transfers") 
 filtered_crime <- crime_df %>%filter(Violations=="Total prostitution")
@@ -550,7 +551,7 @@ plot3 <- ggplot(data = joint_df, aes(x = `Average income (excluding zeros)`, y =
   theme(plot.title = element_text(face = "bold")) +
   theme(legend.position = "none") +
   theme(legend.title = element_text(face = "bold")) +
-  theme(plot.margin = margin(0.5, 0.5, 0.5, 0.5, "cm"))
+  theme(plot.margin = unit(c(0.5, 0.5, 0.5, 0.5), "cm"))
 ```
 
 ```{r, echo = FALSE, fig.align='center', fig.width=15, fig.height=5}
@@ -578,15 +579,14 @@ ggplot(data = plot_data, aes(x = REF_DATE, fill = Violations, y = `Actual incide
   theme(axis.text = element_text(size = 7)) +
   theme(legend.position = "none") +
   theme(plot.title = element_text(face = "bold")) +
-  theme(plot.margin = margin(0.5, 0.5, 0.5, 0.5, "cm"))
+  theme(plot.margin = unit(c(0.5, 0.5, 0.5, 0.5), "cm"))
 ```
 
 ```{r, echo = FALSE, fig.align='right', fig.width=15, fig.height=4}
 ggplot(data = plot_data, aes(x = REF_DATE, fill = Violations, y = `Actual incidents`)) +
   geom_bar(stat = "identity", position = "stack", color = "white", width = 0.01) + 
   theme_void() + 
-  theme(legend.position = "left") +
-  theme(legend.margin = margin(10, 10, 10, 50))
+  theme(legend.position = "left")
 ```
 
 ```{r, echo = FALSE, fig.align='center'}
@@ -621,7 +621,7 @@ joint_df %>%
   labs(title = "Self-employment income vs Total production - Cannabis Act", x = "Average Self-Employment income (excluding zeros)", y = "Number of Incidents of Production - Cannabis Act") +
   theme_linedraw() +
   theme(plot.title = element_text(face = "bold")) +
-  theme(plot.margin = margin(0.5, 0.5, 0.5, 0.5, "cm"))
+  theme(plot.margin = unit(c(0.5, 0.5, 0.5, 0.5), "cm"))
 ```
 
 The second strongest correlation, with a coefficient of 0.98, is observed between **total income and incidents of possession of other Controlled Drugs and Substances Act drugs**. With additional data available, this relationship appears more promising. Upon examination, it becomes evident that as income levels increase, the number of incidents of possession of these drugs also tends to rise. Despite the negative correlation between total income and total crime rate in Ontario, as found in previous analyses, a positive relationship exists between total income and incidents of possession of other Controlled Drugs and Substances Act drugs.
@@ -636,7 +636,7 @@ joint_df %>%
   labs(title = "Total Income vs Total, possession, other Controlled Drugs and Substances Act drugs", x = "Average Total income (excluding zeros)", y = "Number of Incidents") +
   theme_linedraw() +
   theme(plot.title = element_text(face = "bold")) +
-  theme(plot.margin = margin(0.5, 0.5, 0.5, 0.5, "cm"))
+  theme(plot.margin = unit(c(0.5, 0.5, 0.5, 0.5), "cm"))
 ```
 
 ### Group by Income Level
@@ -663,7 +663,7 @@ ggplot(joint_df, aes(x = as.factor(income_level), y = `Rate per 100,000 populati
   labs(x = "Income Level", y = "Total Crime Rate", title = "Total Crime Rate by Income Level") +
   theme_linedraw() +
   theme(plot.title = element_text(face = "bold")) +
-  theme(plot.margin = margin(0.5, 0.5, 0.5, 0.5, "cm")) +
+  theme(plot.margin = unit(c(0.5, 0.5, 0.5, 0.5), "cm")) +
   theme(axis.text = element_text(size = 10))
 ```
 
